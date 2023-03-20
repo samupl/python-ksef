@@ -1,0 +1,51 @@
+{
+    "name": "ksef",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "devcontainer",
+    "workspaceFolder": "/workspaces/ksef/",
+    "remoteUser": "user",
+    "overrideCommand": true,
+    "initializeCommand": ".devcontainer/init",
+    "postStartCommand": "cp --update /opt/build/poetry/poetry.lock /workspaces/ksef/ && mkdir -p /workspaces/ksef/.git/hooks/ && cp --update /opt/build/git/* /workspaces/ksef/.git/hooks/",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "charliermarsh.ruff",
+                "ms-python.python",
+                "ryanluker.vscode-coverage-gutters",
+                "tamasfe.even-better-toml",
+                "visualstudioexptteam.vscodeintellicode"
+            ],
+            "settings": {
+                "coverage-gutters.coverageFileNames": [
+                    "reports/coverage.xml"
+                ],
+                "editor.codeActionsOnSave": {
+                    "source.fixAll": true,
+                    "source.organizeImports": true
+                },
+                "editor.formatOnSave": true,
+                "[toml]": {
+                    "editor.formatOnSave": false
+                },
+                "editor.rulers": [
+                    100
+                ],
+                "files.autoSave": "onFocusChange",
+                "python.defaultInterpreterPath": "/opt/ksef-env/bin/python",
+                "python.formatting.provider": "black",
+                "python.linting.mypyEnabled": true,
+                "python.terminal.activateEnvironment": false,
+                "python.testing.pytestEnabled": true,
+                "ruff.importStrategy": "fromEnvironment",
+                "ruff.logLevel": "warn",
+                "terminal.integrated.defaultProfile.linux": "zsh",
+                "terminal.integrated.profiles.linux": {
+                    "zsh": {
+                        "path": "/usr/bin/zsh"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,31 @@
+{
+  "template": "https://github.com/radix-ai/poetry-cookiecutter",
+  "commit": "9e5572055a98241f97c4d2ae2bfe45fd7cf5c051",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "package_name": "ksef",
+      "package_description": "Python interface for the KSEF API",
+      "package_url": "https://github.com/samupl/python-ksef",
+      "author_name": "Jakub Szafrański",
+      "author_email": "kontakt@samu.pl",
+      "python_version": "3.8",
+      "development_environment": "strict",
+      "with_conventional_commits": "1",
+      "with_fastapi_api": "0",
+      "with_jupyter_lab": "0",
+      "with_pydantic_typing": "1",
+      "with_sentry_logging": "0",
+      "with_streamlit_app": "0",
+      "with_typer_cli": "0",
+      "continuous_integration": "GitHub",
+      "docstring_style": "NumPy",
+      "private_package_repository_name": "",
+      "private_package_repository_url": "",
+      "__package_name_kebab_case": "ksef",
+      "__package_name_snake_case": "ksef",
+      "_template": "https://github.com/radix-ai/poetry-cookiecutter"
+    }
+  },
+  "directory": null
+}

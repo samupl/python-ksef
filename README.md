@@ -2,7 +2,12 @@
 
 # ksef
 
-Python interface for the KSEF API
+**NOT PRODUCTION READY**
+
+A python library for Polish KSEF (National e-invoice system, original: Krajowy System e-Faktur) system.
+
+**IMPORTANT** Currently the project is not even in alpha stage, I barely started working on it. Initially it will 
+support my personal needs only, but I plan to gradually implement new and more complex features.
 
 ## Using
 

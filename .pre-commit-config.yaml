@@ -60,7 +60,7 @@ repos:
       - id: ruff
         name: ruff
         entry: ruff
-        args: ["--fixable=ERA001,F401,F841,T201,T203"]
+        args: ["--fix", "--fixable=I001,ERA001,F401,F841,T201,T203"]
         require_serial: true
         language: system
         types: [python]

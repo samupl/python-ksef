@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]  # https://python-poetry.org/docs/pyproject/
 name = "ksef"
-version = "0.0.0"
+version = "0.1.0"
 description = "Python interface for the KSEF API"
 authors = ["Jakub Szafrański <kontakt@samu.pl>"]
 readme = "README.md"
@@ -14,7 +14,7 @@ repository = "https://github.com/samupl/python-ksef"
 bump_message = "bump(release): v$current_version → v$new_version"
 tag_format = "v$version"
 update_changelog_on_bump = true
-version = "0.0.0"
+version = "0.1.0"
 version_files = ["pyproject.toml:version"]
 
 [tool.poetry.dependencies]  # https://python-poetry.org/docs/dependency-specification/

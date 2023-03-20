@@ -20,6 +20,7 @@ version_files = ["pyproject.toml:version"]
 [tool.poetry.dependencies]  # https://python-poetry.org/docs/dependency-specification/
 pydantic = "^1.10.5"
 python = "^3.8"
+requests = "^2.28.2"
 
 [tool.poetry.group.test.dependencies]  # https://python-poetry.org/docs/master/managing-dependencies/
 absolufy-imports = "^0.3.1"
@@ -37,6 +38,7 @@ ruff = "^0.0.254"
 safety = "^2.3.5"
 shellcheck-py = "^0.9.0"
 typeguard = "^2.13.3"
+types-requests = "^2.28.11.15"
 
 [tool.poetry.group.dev.dependencies]  # https://python-poetry.org/docs/master/managing-dependencies/
 cruft = "^2.12.0"

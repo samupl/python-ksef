@@ -21,6 +21,7 @@ version_files = ["pyproject.toml:version"]
 pydantic = "^1.10.5"
 python = "^3.8"
 requests = "^2.28.2"
+cryptography = "^41.0.7"
 
 [tool.poetry.group.test.dependencies]  # https://python-poetry.org/docs/master/managing-dependencies/
 absolufy-imports = "^0.3.1"
@@ -71,12 +72,16 @@ plugins = "pydantic.mypy"
 strict = true
 disallow_subclassing_any = false
 disallow_untyped_decorators = false
+disallow_untyped_calls = false
 ignore_missing_imports = true
-pretty = true
+pretty = false
 show_column_numbers = true
 show_error_codes = true
 show_error_context = true
 warn_unreachable = true
+exclude = [
+  "^tests/*"
+]
 
 [tool.pydantic-mypy]  # https://pydantic-docs.helpmanual.io/mypy_plugin/#configuring-the-plugin
 init_forbid_extra = true

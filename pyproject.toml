@@ -46,6 +46,9 @@ pytest-responses = "^0.5.1"
 [tool.poetry.group.dev.dependencies]  # https://python-poetry.org/docs/master/managing-dependencies/
 cruft = "^2.12.0"
 pdoc = "^13.0.0"
+
+
+[tool.poetry.group.docs.dependencies]
 mkdocs = "^1.5.3"
 mkdocs-material = "^9.5.2"
 

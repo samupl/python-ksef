@@ -54,7 +54,6 @@ repos:
       - id: mixed-line-ending
       - id: name-tests-test
         args: [--pytest-test-first]
-      - id: no-commit-to-branch
       - id: trailing-whitespace
         types: [python]
   - repo: https://github.com/commitizen-tools/commitizen

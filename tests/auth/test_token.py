@@ -16,7 +16,7 @@ def test_enrich() -> None:
 
     request = auth.modify_request(request)
 
-    assert request.headers["Authorization"] == "abc123"
+    assert request.headers["SessionToken"] == "abc123"
 
 
 def test_get_authorization_challenge(mocked_responses: RequestsMock) -> None:

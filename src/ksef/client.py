@@ -35,6 +35,14 @@ class Client:
         request = Request(
             method="POST",
             url=self.build_url(url=URL_QUERY_INVOICES, params=params),
+            json={
+                "queryCriteria": {
+                    "subjectType": "subject1",
+                    "type": "range",
+                    "invoicingDateFrom": "2023-11-14T13:21:09.000Z",
+                    "invoicingDateTo": "2023-12-12T13:21:09.000Z",
+                }
+            },
         )
         request = self.authorization.modify_request(request)
         prepared_request = request.prepare()

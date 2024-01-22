@@ -14,3 +14,8 @@ class Authorization(ABC):
         :param request: Request to be enriched
         """
         ...
+
+    @abstractmethod
+    def authorize(self, nip: str) -> None:
+        """Perform the authorization process."""
+        ...

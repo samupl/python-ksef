@@ -21,10 +21,13 @@ from ksef.constants import (
 )
 from ksef.models.responses.authorization_challenge import AuthorizationChallenge
 from ksef.models.responses.authorization_token import AuthorizationToken
+from ksef.utils import response_to_exception
 
 
 class TokenAuthorization(Authorization):
     """Simple token-based authorization."""
+
+    authorization_token: AuthorizationToken
 
     def __init__(
         self, token: str, public_key: str, base_url: str = BASE_URL, timeout: int = TIMEOUT
@@ -40,10 +43,17 @@ class TokenAuthorization(Authorization):
         :param request: Request to be enriched
         """
         request.prepare()
-        request.headers["Authorization"] = self.token  # TODO: This is just a stub implementaion
+        request.headers["SessionToken"] = self.token
         headers = self.build_headers()
         request.headers.update(headers)
         return request
+
+    def authorize(self, nip: str) -> None:
+        """Authorize the token authorization by obtaining a session token."""
+        challenge = self.get_authorization_challenge(nip=nip)
+        authorization_token = self.init_token(authorization_challenge=challenge, nip=nip)
+        self.authorization_token = authorization_token
+        self.token = authorization_token.session_token.token
 
     def build_url(self, url: str) -> str:
         """Construct a full URL."""
@@ -74,6 +84,9 @@ class TokenAuthorization(Authorization):
             timeout=TIMEOUT,
         )
         challenge = response.json()
+        error = response_to_exception(response)
+        if error is not None:
+            raise error
         return AuthorizationChallenge(
             timestamp=challenge["timestamp"], challenge=challenge["challenge"]
         )
@@ -118,4 +131,7 @@ class TokenAuthorization(Authorization):
             data=document_xml,
             timeout=self.timeout,
         )
+        error = response_to_exception(response)
+        if error is not None:
+            raise error
         return AuthorizationToken.from_dict(response.json())

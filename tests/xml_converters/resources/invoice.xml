@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Faktura>
+        <Naglowek>
+            <KodFormularza kodSystemowy="FA (1)" wersjaSchemy="1-0E">FA</KodFormularza>
+            <WariantFormularza>1</WariantFormularza>
+        </Naglowek>
+</Faktura>

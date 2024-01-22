@@ -1,11 +1,11 @@
 """Invoice model."""
 from datetime import date
 from decimal import Decimal
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel
 
-from ksef.compat import StrEnum
 from ksef.models.invoice_annotations import InvoiceAnnotations
 from ksef.models.invoice_rows import InvoiceRows
 
@@ -47,7 +47,7 @@ class Subject(BaseModel):
     phone: str
 
 
-class InvoiceType(StrEnum):
+class InvoiceType(Enum):
     """
     Type of the invoice.
 
@@ -100,3 +100,4 @@ class Invoice(BaseModel):
 
     issuer: Subject
     recipient: Subject
+    invoice_data: InvoiceData

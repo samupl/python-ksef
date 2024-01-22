@@ -1,60 +1,59 @@
 """Models for invoice annotations/metadata."""
+from enum import Enum
 
 from pydantic import BaseModel
 
-from ksef.compat import StrEnum
 
-
-class ReverseCharge(StrEnum):
+class ReverseCharge(Enum):
     """Possible values for the reverse charge field."""
 
     YES = "1"
     NO = "2"
 
 
-class TaxSettlementOnPayment(StrEnum):
+class TaxSettlementOnPayment(Enum):
     """Possible values for the tax settlement on payment field."""
 
     ON_PAYMENT = "1"
     REGULAR = "2"
 
 
-class SelfInvoicing(StrEnum):
+class SelfInvoicing(Enum):
     """Possible values for the self invoicing field."""
 
     YES = "1"
     NO = "2"
 
 
-class SplitPayment(StrEnum):
+class SplitPayment(Enum):
     """Possible values for the split payment field."""
 
     YES = "1"
     NO = "2"
 
 
-class FreeFromVat(StrEnum):
+class FreeFromVat(Enum):
     """Possible values for the free from vat tax field."""
 
     YES = "1"
     NO = "2"
 
 
-class IntraCommunitySupplyOfNewTransportMethods(StrEnum):
+class IntraCommunitySupplyOfNewTransportMethods(Enum):
     """Possible values for the intra community supply of new transport methods field."""
 
     YES = "1"
     NO = "2"
 
 
-class SimplifiedProcedureBySecondTaxPayer(StrEnum):
+class SimplifiedProcedureBySecondTaxPayer(Enum):
     """Possible values of the simplified procedure by second tax payer field."""
 
     YES = "1"
     NO = "2"
 
 
-class MarginProcedure(StrEnum):
+class MarginProcedure(Enum):
     """Possible values for the margin procedure field."""
 
     YES = "1"

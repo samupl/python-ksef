@@ -76,7 +76,7 @@ def test_simple() -> None:
             issue_date=date(2024, 1, 22),
             issue_number="FA/1/2024",
             sell_date=date(2024, 1, 1),
-            total_amount=Decimal("450"),
+            total_amount=Decimal("450.00"),
             invoice_annotations=InvoiceAnnotations(
                 tax_settlement_on_payment=TaxSettlementOnPayment.REGULAR,
                 self_invoice=SelfInvoicing.NO,
@@ -89,7 +89,10 @@ def test_simple() -> None:
             ),
             invoice_type=InvoiceType.REGULAR_VAT,
             invoice_rows=InvoiceRows(
-                rows_count=1, rows=[InvoiceRow(row_number=1, name="Example service", tax=23)]
+                rows=[
+                    InvoiceRow(name="Example service 1", tax=23),
+                    InvoiceRow(name="Example service 2", tax=8),
+                ]
             ),
         ),
     )

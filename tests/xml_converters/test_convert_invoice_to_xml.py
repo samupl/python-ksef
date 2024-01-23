@@ -5,7 +5,16 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from ksef.models.invoice import IdentificationData, Invoice, InvoiceData, InvoiceType, Subject
+from ksef.models.invoice import (
+    Address,
+    Invoice,
+    InvoiceData,
+    InvoiceType,
+    Issuer,
+    IssuerIdentificationData,
+    Subject,
+    SubjectIdentificationData,
+)
 from ksef.models.invoice_annotations import (
     FreeFromVat,
     IntraCommunitySupplyOfNewTransportMethods,
@@ -42,19 +51,25 @@ def test_simple() -> None:
         expected_content = fd.read()
 
     invoice = Invoice(
-        issuer=Subject(
-            identification_data=IdentificationData(
+        issuer=Issuer(
+            identification_data=IssuerIdentificationData(
                 nip="1111111111", full_name="Example Company 1 Sp z o. o."
             ),
             email="example@example.com",
             phone="+48 111111111",
+            address=Address(
+                country_code="PL",
+                city="Warszawa",
+                street="Kwiatowa",
+                house_number="1",
+                apartment_number="2",
+                postal_code="00-001",
+            ),
         ),
         recipient=Subject(
-            identification_data=IdentificationData(
-                nip="2222222222", full_name="Example Company 2 Sp z o. o."
+            identification_data=SubjectIdentificationData(
+                nip="2222222222",
             ),
-            email="example@example.com",
-            phone="+48 222222222",
         ),
         invoice_data=InvoiceData(
             currency_code="PLN",
@@ -79,5 +94,4 @@ def test_simple() -> None:
         ),
     )
     actual_content = convert_invoice_to_xml(invoice)
-
     assert_xml_equal(actual_content=actual_content, expected_content=expected_content)

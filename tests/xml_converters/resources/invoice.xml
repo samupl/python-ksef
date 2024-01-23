@@ -1,7 +1,32 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Faktura>
-        <Naglowek>
-            <KodFormularza kodSystemowy="FA (1)" wersjaSchemy="1-0E">FA</KodFormularza>
-            <WariantFormularza>1</WariantFormularza>
-        </Naglowek>
+<Faktura
+    xmlns="http://ksef.mf.gov.pl/wzor/2021/08/05/08051/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:tns="http://ksef.mf.gov.pl/wzor/2021/08/05/08051/"
+    xsi:schemaLocation="http://crd.gov.pl/wzor/2021/11/29/11089/schemat.xsd"
+>
+    <Naglowek>
+        <KodFormularza kodSystemowy="FA (1)" wersjaSchemy="1-0E">FA</KodFormularza>
+        <WariantFormularza>1</WariantFormularza>
+        <SystemInfo>python-ksef</SystemInfo>
+    </Naglowek>
+    <Podmiot1>
+        <DaneIdentyfikacyjne>
+            <NIP>1111111111</NIP>
+            <PelnaNazwa>Example Company 1 Sp z o. o.</PelnaNazwa>
+        </DaneIdentyfikacyjne>
+        <Adres xsi:type="tns:TAdresPolski">
+            <KodKraju>PL</KodKraju>
+            <Miejscowosc>Warszawa</Miejscowosc>
+            <Ulica>Kwiatowa</Ulica>
+            <NrDomu>1</NrDomu>
+            <NrLokalu>2</NrLokalu>
+            <KodPocztowy>00-001</KodPocztowy>
+        </Adres>
+    </Podmiot1>
+    <Podmiot2>
+        <DaneIdentyfikacyjne>
+            <NIP>2222222222</NIP>
+        </DaneIdentyfikacyjne>
+    </Podmiot2>
 </Faktura>

@@ -10,7 +10,7 @@ from ksef.models.invoice_annotations import InvoiceAnnotations
 from ksef.models.invoice_rows import InvoiceRows
 
 
-class IdentificationData(BaseModel):
+class IssuerIdentificationData(BaseModel):
     """
     Subject identification data.
 
@@ -19,6 +19,16 @@ class IdentificationData(BaseModel):
 
     nip: str
     full_name: str
+
+
+class SubjectIdentificationData(BaseModel):
+    """
+    Subject identification data.
+
+    Corresponds to the field TPodmiot1/TPodmiot2 from the invoice XML schema.
+    """
+
+    nip: str
 
 
 class Address(BaseModel):
@@ -39,10 +49,21 @@ class Subject(BaseModel):
     """
     A subject of the invoice (issuer or recipient).
 
-    Corresponds to the field TPodmiot1/TPodmiot2 from the invoice XML schema.
+    Corresponds to the field TPodmiot2 from the invoice XML schema.
     """
 
-    identification_data: IdentificationData
+    identification_data: SubjectIdentificationData
+
+
+class Issuer(BaseModel):
+    """
+    Invoice issuer.
+
+    Corresponds to the field TPodmiot1 from the invoice XML schema.
+    """
+
+    identification_data: IssuerIdentificationData
+    address: Address
     email: str
     phone: str
 
@@ -98,6 +119,6 @@ class Invoice(BaseModel):
     Corresponds to the root field Faktura from the invoice XML schema.
     """
 
-    issuer: Subject
+    issuer: Issuer
     recipient: Subject
     invoice_data: InvoiceData

@@ -1,4 +1,5 @@
 """Base client for interacting with the KSEF API."""
+import logging
 from typing import Dict, Mapping, Optional, Union, cast
 from urllib.parse import urlencode, urljoin
 
@@ -7,6 +8,8 @@ from requests import Request
 
 from ksef.auth.base import Authorization
 from ksef.constants import BASE_URL, URL_QUERY_INVOICES
+
+logger = logging.getLogger(__name__)
 
 
 class Client:
@@ -47,5 +50,7 @@ class Client:
         request = self.authorization.modify_request(request)
         prepared_request = request.prepare()
         response = self.session.send(prepared_request)
+        logger.debug("Search invoices response (%s): %s", response.status_code, response.text)
+        response.raise_for_status()
         data = cast(Dict[str, str], response.json())
         return data

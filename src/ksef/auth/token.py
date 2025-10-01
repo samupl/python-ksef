@@ -1,6 +1,7 @@
 """Simple token-based authorization implementation."""
 import base64
 import copy
+import logging
 from datetime import datetime, timezone
 from typing import Mapping, cast
 from urllib.parse import urljoin
@@ -22,6 +23,8 @@ from ksef.constants import (
 from ksef.models.responses.authorization_challenge import AuthorizationChallenge
 from ksef.models.responses.authorization_token import AuthorizationToken
 from ksef.utils import response_to_exception
+
+logger = logging.getLogger(__name__)
 
 
 class TokenAuthorization(Authorization):
@@ -82,6 +85,9 @@ class TokenAuthorization(Authorization):
                 }
             },
             timeout=TIMEOUT,
+        )
+        logger.debug(
+            "Authorization challenge response (%s): %s", response.status_code, response.text
         )
         challenge = response.json()
         error = response_to_exception(response)

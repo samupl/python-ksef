@@ -22,17 +22,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install poetry
-        run: pip install poetry
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
-        run: poetry install
+        run: uv sync
 
       - name: Lint project
-        run: poetry run poe lint
+        run: | 
+          pre-commit run --all-files --color always
+          safety check --continue-on-error --full-report
 
       - name: Test package
-        run: poetry run poe test
+        run: |
+          coverage run
+          coverage report
+          coverage xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3

@@ -145,28 +145,3 @@ convention = "numpy"
     name = "outputdirectory"
     options = ["--output-directory"]
     default = "docs"
-
-[tool.poe.tasks.lint]
-  help = "Lint this package"
-
-[[tool.poe.tasks.lint.sequence]]
-    cmd = """
-      pre-commit run
-        --all-files
-        --color always
-      """
-
-[[tool.poe.tasks.lint.sequence]]
-    shell = "safety check --continue-on-error --full-report"
-
-[tool.poe.tasks.test]
-  help = "Test this package"
-
-[[tool.poe.tasks.test.sequence]]
-    cmd = "coverage run"
-
-[[tool.poe.tasks.test.sequence]]
-    cmd = "coverage report"
-
-[[tool.poe.tasks.test.sequence]]
-    cmd = "coverage xml"

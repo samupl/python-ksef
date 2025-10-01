@@ -33,7 +33,7 @@ jobs:
 
       - name: Lint project
         run: | 
-          run pre-commit run --all-files --color always
+          pre-commit run --all-files --color always
           safety check --continue-on-error --full-report
 
       - name: Test package

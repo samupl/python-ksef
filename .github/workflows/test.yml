@@ -30,14 +30,14 @@ jobs:
 
       - name: Lint project
         run: | 
-          pre-commit run --all-files --color always
+          uv run pre-commit run --all-files --color always
           safety check --continue-on-error --full-report
 
       - name: Test package
         run: |
-          coverage run
-          coverage report
-          coverage xml
+          uv run coverage run
+          uv run coverage report
+          uv run coverage xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3

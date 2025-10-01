@@ -76,7 +76,7 @@ repos:
         types: [shell]
       - id: mypy
         name: mypy
-        entry: poetry run mypy
+        entry: uv run mypy
         require_serial: true
         language: system
         types: [ python ]

@@ -61,6 +61,11 @@ repos:
     hooks:
       - id: commitizen
         stages: [ commit-msg ]
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.8.22
+    hooks:
+      - id: uv-lock
   - repo: local
     hooks:
       - id: shellcheck
@@ -69,18 +74,6 @@ repos:
         args: [--check-sourced]
         language: system
         types: [shell]
-      - id: poetry-check
-        name: poetry check
-        entry: poetry check
-        language: system
-        files: pyproject.toml
-        pass_filenames: false
-      - id: poetry-lock-check
-        name: poetry lock check
-        entry: poetry lock
-        args: [--check]
-        language: system
-        pass_filenames: false
       - id: mypy
         name: mypy
         entry: poetry run mypy

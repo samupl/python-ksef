@@ -1,79 +1,89 @@
-[build-system]  # https://python-poetry.org/docs/pyproject/#poetry-and-pep-517
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry]  # https://python-poetry.org/docs/pyproject/
+[project]
 name = "ksef"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python interface for the KSEF API"
-authors = ["Jakub Szafrański <kontakt@samu.pl>"]
+authors = [{ name = "Jakub Szafrański", email = "kontakt@samu.pl" }]
+requires-python = "~=3.9"
 readme = "README.md"
-repository = "https://github.com/samupl/python-ksef"
+dependencies = [
+    "pydantic>=1.10.5,<2",
+    "requests>=2.28.2,<3",
+    "cryptography>=41.0.7,<42",
+]
 
-[tool.commitizen]  # https://commitizen-tools.github.io/commitizen/config/
+[project.urls]
+Repository = "https://github.com/samupl/python-ksef"
+
+[dependency-groups]
+test = [
+    "absolufy-imports>=0.3.1,<0.4",
+    "black>=22.12.0,<23",
+    "commitizen>=2.42.1,<3",
+    "coverage[toml]>=7.2.1,<8",
+    "mypy>=1.0.1,<2",
+    "poethepoet>=0.18.1,<0.19",
+    "pre-commit>=4.3.0,<5",
+    "pytest>=7.2.2,<8",
+    "pytest-clarity>=1.0.1,<2",
+    "pytest-mock>=3.10.0,<4",
+    "pytest-xdist>=3.2.0,<4",
+    "ruff>=0.0.254,<0.0.255",
+    "safety>=2.3.5,<3",
+    "shellcheck-py>=0.9.0,<0.10",
+    "typeguard>=2.13.3,<3",
+    "types-requests>=2.28.11.15,<3",
+    "responses>=0.23.1,<0.24",
+    "pytest-responses>=0.5.1,<0.6",
+]
+dev = [
+    "cruft>=2.12.0,<3",
+    "pdoc>=13.0.0,<14",
+    "bs4>=0.0.2,<0.0.3",
+    "lxml>=5.1.0,<6",
+]
+docs = [
+    "mkdocs>=1.5.3,<2",
+    "mkdocs-material>=9.5.2,<10",
+]
+
+[tool.uv]
+default-groups = [
+    "test",
+    "dev",
+    "docs",
+]
+
+[tool.commitizen]
 bump_message = "bump(release): v$current_version → v$new_version"
 tag_format = "v$version"
 update_changelog_on_bump = true
 version = "0.1.0"
 version_files = ["pyproject.toml:version"]
 
-[tool.poetry.dependencies]  # https://python-poetry.org/docs/dependency-specification/
-pydantic = "^1.10.5"
-python = "^3.8"
-requests = "^2.28.2"
-cryptography = "^41.0.7"
-
-[tool.poetry.group.test.dependencies]  # https://python-poetry.org/docs/master/managing-dependencies/
-absolufy-imports = "^0.3.1"
-black = "^22.12.0"
-commitizen = "^2.42.1"
-coverage = { extras = ["toml"], version = "^7.2.1" }
-mypy = "^1.0.1"
-poethepoet = "^0.18.1"
-pre-commit = "^3.1.1"
-pytest = "^7.2.2"
-pytest-clarity = "^1.0.1"
-pytest-mock = "^3.10.0"
-pytest-xdist = "^3.2.0"
-ruff = "^0.0.254"
-safety = "^2.3.5"
-shellcheck-py = "^0.9.0"
-typeguard = "^2.13.3"
-types-requests = "^2.28.11.15"
-responses = "^0.23.1"
-pytest-responses = "^0.5.1"
-
-[tool.poetry.group.dev.dependencies]  # https://python-poetry.org/docs/master/managing-dependencies/
-cruft = "^2.12.0"
-pdoc = "^13.0.0"
-bs4 = "^0.0.2"
-lxml = "^5.1.0"
-
-
-[tool.poetry.group.docs.dependencies]
-mkdocs = "^1.5.3"
-mkdocs-material = "^9.5.2"
-
-[tool.black]  # https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html#configuration-via-a-file
+[tool.black]
 line-length = 100
 target-version = ["py38"]
 
-[tool.coverage.report]  # https://coverage.readthedocs.io/en/latest/config.html#report
+[tool.coverage.report]
 fail_under = 50
 precision = 1
 show_missing = true
 skip_covered = true
 
-[tool.coverage.run]  # https://coverage.readthedocs.io/en/latest/config.html#run
+[tool.coverage.run]
 branch = true
 command_line = "--module pytest"
 data_file = "reports/.coverage"
 source = ["src"]
 
-[tool.coverage.xml]  # https://coverage.readthedocs.io/en/latest/config.html#xml
+[tool.coverage.xml]
 output = "reports/coverage.xml"
 
-[tool.mypy]  # https://mypy.readthedocs.io/en/latest/config_file.html
+[tool.mypy]
 junit_xml = "reports/mypy.xml"
 plugins = "pydantic.mypy"
 strict = true
@@ -90,19 +100,19 @@ exclude = [
   "^tests/*"
 ]
 
-[tool.pydantic-mypy]  # https://pydantic-docs.helpmanual.io/mypy_plugin/#configuring-the-plugin
+[tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
 warn_untyped_fields = true
 
-[tool.pytest.ini_options]  # https://docs.pytest.org/en/latest/reference/reference.html#ini-options-ref
+[tool.pytest.ini_options]
 addopts = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --typeguard-packages=ksef --verbosity=2 --junitxml=reports/pytest.xml"
 filterwarnings = ["error", "ignore::DeprecationWarning"]
 testpaths = ["src", "tests"]
 xfail_strict = true
 
-[tool.ruff]  # https://github.com/charliermarsh/ruff
+[tool.ruff]
 fix = true
 ignore-init-module-imports = true
 line-length = 100
@@ -115,9 +125,7 @@ target-version = "py38"
 [tool.ruff.pydocstyle]
 convention = "numpy"
 
-[tool.poe.tasks]  # https://github.com/nat-n/poethepoet
-
-  [tool.poe.tasks.docs]
+[tool.poe.tasks.docs]
   help = "Generate this package's docs"
   cmd = """
     pdoc
@@ -126,39 +134,39 @@ convention = "numpy"
       ksef
     """
 
-    [[tool.poe.tasks.docs.args]]
+[[tool.poe.tasks.docs.args]]
     help = "The docstring style (default: numpy)"
     name = "docformat"
     options = ["--docformat"]
     default = "numpy"
 
-    [[tool.poe.tasks.docs.args]]
+[[tool.poe.tasks.docs.args]]
     help = "The output directory (default: docs)"
     name = "outputdirectory"
     options = ["--output-directory"]
     default = "docs"
 
-  [tool.poe.tasks.lint]
+[tool.poe.tasks.lint]
   help = "Lint this package"
 
-    [[tool.poe.tasks.lint.sequence]]
+[[tool.poe.tasks.lint.sequence]]
     cmd = """
       pre-commit run
         --all-files
         --color always
       """
 
-    [[tool.poe.tasks.lint.sequence]]
+[[tool.poe.tasks.lint.sequence]]
     shell = "safety check --continue-on-error --full-report"
 
-  [tool.poe.tasks.test]
+[tool.poe.tasks.test]
   help = "Test this package"
 
-    [[tool.poe.tasks.test.sequence]]
+[[tool.poe.tasks.test.sequence]]
     cmd = "coverage run"
 
-    [[tool.poe.tasks.test.sequence]]
+[[tool.poe.tasks.test.sequence]]
     cmd = "coverage report"
 
-    [[tool.poe.tasks.test.sequence]]
+[[tool.poe.tasks.test.sequence]]
     cmd = "coverage xml"

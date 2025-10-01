@@ -28,12 +28,12 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Ensure latest setuptools is installed
-        run: pip install --upgrade setuptools
+      - name: Ensure latest setuptools & pre-commit is installed
+        run: pip install --upgrade setuptools pre-commit
 
       - name: Lint project
         run: | 
-          uv run pre-commit run --all-files --color always
+          run pre-commit run --all-files --color always
           safety check --continue-on-error --full-report
 
       - name: Test package

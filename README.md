@@ -6,12 +6,74 @@
 
 A python library for Polish KSEF (National e-invoice system, original: Krajowy System e-Faktur) system.
 
+The official KSEF API documentation can be found at https://github.com/CIRFMF/ksef-docs/tree/main.
+
 **IMPORTANT** Currently the project is not even in alpha stage, I barely started working on it. Initially it will 
 support my personal needs only, but I plan to gradually implement new and more complex features.
 
 ## Using
 
-To add and install this package as a dependency of your project, run `poetry add ksef`.
+To add and install this package as a dependency of your project, run `uv add ksef` (or `pip install ksef`).
+
+## Authentication Setup
+
+The library supports two authentication methods for KSEF API v2:
+
+### KSeF Token Authentication
+
+A KSeF token can be generated via the KSeF web portal or obtained through the API after XAdES authentication.
+
+```python
+from ksef.auth.token import TokenAuthorization
+from ksef.client import Client
+from ksef.constants import Environment
+
+auth = TokenAuthorization(
+    token="your-ksef-token",
+    environment=Environment.TEST,
+)
+tokens = auth.authorize(nip="1234567890")
+
+client = Client(authorization=auth, environment=Environment.TEST)
+```
+
+### XAdES Certificate Authentication
+
+Requires a qualified certificate from a trusted CA, or a KSeF-issued certificate. Provide PEM-encoded certificate and private key bytes.
+
+```python
+from pathlib import Path
+
+from ksef.auth.xades import XadesAuthorization
+from ksef.client import Client
+from ksef.constants import Environment
+
+auth = XadesAuthorization(
+    signing_cert=Path("cert.pem").read_bytes(),
+    private_key=Path("key.pem").read_bytes(),
+    environment=Environment.TEST,
+)
+tokens = auth.authorize(nip="1234567890")
+
+client = Client(authorization=auth, environment=Environment.TEST)
+```
+
+### Environments
+
+- `Environment.PRODUCTION` — `https://api.ksef.mf.gov.pl/api/v2/`
+- `Environment.DEMO` — `https://api-demo.ksef.mf.gov.pl/api/v2/`
+- `Environment.TEST` — `https://api-test.ksef.mf.gov.pl/api/v2/`
+
+## Integration Tests
+
+Integration tests connect to the live KSEF test environment using real credentials. They are excluded from the default test run and must be invoked explicitly:
+
+```bash
+source .env
+uv run pytest -m integration
+```
+
+Credentials are provided via environment variables. Tests with missing variables are skipped automatically. See [`tests/integration/README.md`](tests/integration/README.md) for the full list of variables and per-method usage.
 
 ## Contributing
 

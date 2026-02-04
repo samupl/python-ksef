@@ -1,21 +1,25 @@
 """Base authorization class, used to define the API for all implementations."""
 from abc import ABC, abstractmethod
 
-from requests import Request
+from ksef.models.responses.auth import AuthTokens
 
 
 class Authorization(ABC):
-    """Base requests-based authorization class."""
+    """Base authorization class for KSEF API v2."""
+
+    _tokens: AuthTokens
 
     @abstractmethod
-    def modify_request(self, request: Request) -> Request:
-        """Enrich a prepared request with authorization headers/params, depending on the actual implementation.
+    def authorize(self, nip: str) -> AuthTokens:
+        """Perform the full authorization flow and return access/refresh tokens.
 
-        :param request: Request to be enriched
+        Parameters
+        ----------
+        nip : str
+            The NIP (tax identification number) to authorize with.
         """
         ...
 
-    @abstractmethod
-    def authorize(self, nip: str) -> None:
-        """Perform the authorization process."""
-        ...
+    def get_access_token(self) -> str:
+        """Return the current access token for API calls."""
+        return self._tokens.access_token.token

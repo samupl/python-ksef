@@ -53,3 +53,27 @@ class RateLimitExceededError(_ResponseMixin, KsefError):
     message = (
         "Your client has sent too many requests and has been throttled. Please try again later."
     )
+
+
+class AuthenticationError(KsefError):
+    """Authentication-specific failure."""
+
+    def __init__(self, detail: str):
+        self.detail = detail
+        super().__init__(detail)
+
+    @property
+    def message(self) -> str:
+        """Human-readable error message."""
+        return self.detail
+
+
+class AuthenticationPendingError(KsefError):
+    """Authentication status is still in progress (used internally during polling)."""
+
+    should_retry = True
+
+    @property
+    def message(self) -> str:
+        """Human-readable error message."""
+        return "Authentication is still pending."

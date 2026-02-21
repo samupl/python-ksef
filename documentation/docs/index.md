@@ -39,7 +39,7 @@ from ksef.client import Client
 from ksef.constants import Environment
 from ksef.models.invoice import (
     Address, Invoice, InvoiceData, InvoiceType,
-    Issuer, IssuerIdentificationData, Subject, SubjectIdentificationData,
+    Issuer, IssuerIdentificationData, Subject, NipIdentification,
 )
 from ksef.models.invoice_annotations import (
     InvoiceAnnotations, TaxSettlementOnPayment, SelfInvoicing,
@@ -73,7 +73,7 @@ invoice = Invoice(
         phone="+48 123456789",
     ),
     recipient=Subject(
-        identification_data=SubjectIdentificationData(nip="0987654321"),
+        identification_data=NipIdentification(nip="0987654321"),
     ),
     invoice_data=InvoiceData(
         currency_code="PLN",

@@ -32,7 +32,7 @@ from ksef.models.invoice import (
     Issuer,
     IssuerIdentificationData,
     Subject,
-    SubjectIdentificationData,
+    NipIdentification,
 )
 from ksef.models.invoice_annotations import (
     FreeFromVat,
@@ -67,10 +67,15 @@ invoice = Invoice(
     ),
 
     # Recipient (buyer) information
+    # Use NipIdentification for Polish companies, or one of:
+    # - EuVatIdentification(eu_country_code="DE", eu_vat_number="123456789") for EU
+    # - ForeignIdentification(country_code="US", tax_id="EIN123") for non-EU
+    # - NoIdentification() for individuals (B2C)
     recipient=Subject(
-        identification_data=SubjectIdentificationData(
+        identification_data=NipIdentification(
             nip="0987654321",
         ),
+        # name="Buyer Name Sp. z o.o.",  # Optional buyer name
         # Optional: buyer address
         address=Address(
             country_code="PL",
@@ -116,6 +121,40 @@ invoice = Invoice(
     creation_datetime=datetime.now(tz=timezone.utc),
 )
 ```
+
+## Recipient Types
+
+The `Subject` model supports four identification types for the buyer, matching the FA(3) schema:
+
+```python
+from ksef.models.invoice import (
+    Subject, NipIdentification, EuVatIdentification,
+    ForeignIdentification, NoIdentification,
+)
+
+# Polish company (B2B)
+recipient = Subject(identification_data=NipIdentification(nip="0987654321"))
+
+# EU company
+recipient = Subject(
+    identification_data=EuVatIdentification(eu_country_code="DE", eu_vat_number="123456789"),
+    name="Deutsche Firma GmbH",
+)
+
+# Non-EU entity
+recipient = Subject(
+    identification_data=ForeignIdentification(country_code="US", tax_id="EIN123456"),
+    name="American Corp.",
+)
+
+# Individual / no tax ID (B2C)
+recipient = Subject(
+    identification_data=NoIdentification(),
+    name="Jan Kowalski",
+)
+```
+
+See the [Invoice Models Reference](../../reference/invoice-models.md#subject-recipient) for full details on each type.
 
 ## Sending with the Convenience Method
 

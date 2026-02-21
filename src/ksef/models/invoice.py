@@ -2,7 +2,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel
 
@@ -21,14 +21,32 @@ class IssuerIdentificationData(BaseModel):
     full_name: str
 
 
-class SubjectIdentificationData(BaseModel):
-    """
-    Subject identification data.
-
-    Corresponds to the field TPodmiot1/TPodmiot2 from the invoice XML schema.
-    """
+class NipIdentification(BaseModel):
+    """Polish NIP identification for Podmiot2."""
 
     nip: str
+
+
+class EuVatIdentification(BaseModel):
+    """EU VAT identification for Podmiot2."""
+
+    eu_country_code: str
+    eu_vat_number: str
+
+
+class ForeignIdentification(BaseModel):
+    """Non-EU foreign tax identification for Podmiot2."""
+
+    country_code: Optional[str] = None
+    tax_id: str
+
+
+class NoIdentification(BaseModel):
+    """No tax identification (individuals, B2C) for Podmiot2."""
+
+
+# Backwards-compatible alias
+SubjectIdentificationData = NipIdentification
 
 
 class Address(BaseModel):
@@ -52,7 +70,10 @@ class Subject(BaseModel):
     Corresponds to the field TPodmiot2 from the invoice XML schema.
     """
 
-    identification_data: SubjectIdentificationData
+    identification_data: Union[
+        NipIdentification, EuVatIdentification, ForeignIdentification, NoIdentification
+    ]
+    name: Optional[str] = None
     address: Optional[Address] = None
     jst: int = 2
     gv: int = 2

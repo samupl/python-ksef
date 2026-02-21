@@ -7,11 +7,15 @@ from bs4 import BeautifulSoup
 
 from ksef.models.invoice import (
     Address,
+    EuVatIdentification,
+    ForeignIdentification,
     Invoice,
     InvoiceData,
     InvoiceType,
     Issuer,
     IssuerIdentificationData,
+    NipIdentification,
+    NoIdentification,
     Subject,
     SubjectIdentificationData,
 )
@@ -156,3 +160,115 @@ def test_without_apartment_number() -> None:
     actual_content = convert_invoice_to_xml(invoice)
     assert_xml_equal(actual_content=actual_content, expected_content=expected_content)
     assert b"NrLokalu" not in actual_content
+
+
+def _make_invoice(recipient: Subject) -> Invoice:
+    """Build a minimal invoice with the given recipient."""
+    return Invoice(
+        issuer=Issuer(
+            identification_data=IssuerIdentificationData(
+                nip="1111111111", full_name="Example Company 1 Sp z o. o."
+            ),
+            email="example@example.com",
+            phone="+48 111111111",
+            address=Address(
+                country_code="PL",
+                city="Warszawa",
+                street="Kwiatowa",
+                house_number="1",
+                apartment_number="2",
+                postal_code="00-001",
+            ),
+        ),
+        recipient=recipient,
+        invoice_data=InvoiceData(
+            currency_code="PLN",
+            issue_date=date(2024, 1, 22),
+            issue_number="FA/1/2024",
+            sell_date=date(2024, 1, 1),
+            total_amount=Decimal("450.00"),
+            invoice_annotations=InvoiceAnnotations(
+                tax_settlement_on_payment=TaxSettlementOnPayment.REGULAR,
+                self_invoice=SelfInvoicing.NO,
+                reverse_charge=ReverseCharge.NO,
+                split_payment=SplitPayment.NO,
+                free_from_vat=FreeFromVat.NO,
+                intra_community_supply_of_new_transport_methods=IntraCommunitySupplyOfNewTransportMethods.NO,
+                simplified_procedure_by_second_tax_payer=SimplifiedProcedureBySecondTaxPayer.NO,
+                margin_procedure=MarginProcedure.NO,
+            ),
+            invoice_type=InvoiceType.REGULAR_VAT,
+            invoice_rows=InvoiceRows(
+                rows=[
+                    InvoiceRow(name="Example service 1", tax=23),
+                    InvoiceRow(name="Example service 2", tax=8),
+                ]
+            ),
+        ),
+        creation_datetime=datetime(2024, 1, 22, 10, 30, 0, tzinfo=timezone.utc),
+    )
+
+
+def test_recipient_eu_vat() -> None:
+    """Test EU company recipient produces KodUE + NrVatUE elements."""
+    invoice = _make_invoice(
+        Subject(
+            identification_data=EuVatIdentification(eu_country_code="DE", eu_vat_number="123456789")
+        )
+    )
+    xml = convert_invoice_to_xml(invoice)
+    soup = BeautifulSoup(xml, "xml")
+    id_data = soup.find("Podmiot2").find("DaneIdentyfikacyjne")
+    assert id_data.find("KodUE").text == "DE"
+    assert id_data.find("NrVatUE").text == "123456789"
+    assert id_data.find("NIP") is None
+
+
+def test_recipient_foreign_id() -> None:
+    """Test non-EU recipient with country code produces KodKraju + NrID."""
+    invoice = _make_invoice(
+        Subject(identification_data=ForeignIdentification(country_code="US", tax_id="EIN123"))
+    )
+    xml = convert_invoice_to_xml(invoice)
+    soup = BeautifulSoup(xml, "xml")
+    id_data = soup.find("Podmiot2").find("DaneIdentyfikacyjne")
+    assert id_data.find("KodKraju").text == "US"
+    assert id_data.find("NrID").text == "EIN123"
+    assert id_data.find("NIP") is None
+
+
+def test_recipient_foreign_id_without_country() -> None:
+    """Test non-EU recipient without country code produces only NrID."""
+    invoice = _make_invoice(Subject(identification_data=ForeignIdentification(tax_id="XYZ999")))
+    xml = convert_invoice_to_xml(invoice)
+    soup = BeautifulSoup(xml, "xml")
+    id_data = soup.find("Podmiot2").find("DaneIdentyfikacyjne")
+    assert id_data.find("NrID").text == "XYZ999"
+    assert id_data.find("KodKraju") is None
+
+
+def test_recipient_no_id() -> None:
+    """Test individual/B2C recipient produces BrakID and supports Nazwa."""
+    invoice = _make_invoice(Subject(identification_data=NoIdentification(), name="Jan Kowalski"))
+    xml = convert_invoice_to_xml(invoice)
+    soup = BeautifulSoup(xml, "xml")
+    podmiot2 = soup.find("Podmiot2")
+    id_data = podmiot2.find("DaneIdentyfikacyjne")
+    assert id_data.find("BrakID").text == "1"
+    assert id_data.find("NIP") is None
+    assert podmiot2.find("Nazwa").text == "Jan Kowalski"
+
+
+def test_recipient_with_name() -> None:
+    """Test NIP recipient with name produces both NIP and Nazwa."""
+    invoice = _make_invoice(
+        Subject(
+            identification_data=NipIdentification(nip="2222222222"),
+            name="Firma Testowa Sp. z o.o.",
+        )
+    )
+    xml = convert_invoice_to_xml(invoice)
+    soup = BeautifulSoup(xml, "xml")
+    podmiot2 = soup.find("Podmiot2")
+    assert podmiot2.find("DaneIdentyfikacyjne").find("NIP").text == "2222222222"
+    assert podmiot2.find("Nazwa").text == "Firma Testowa Sp. z o.o."

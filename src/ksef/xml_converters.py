@@ -3,7 +3,13 @@ from datetime import datetime, timezone
 from typing import Optional, cast
 from xml.etree import ElementTree
 
-from ksef.models.invoice import Invoice
+from ksef.models.invoice import (
+    EuVatIdentification,
+    ForeignIdentification,
+    Invoice,
+    NipIdentification,
+    NoIdentification,
+)
 
 # FA(3) schema namespace
 FA3_NAMESPACE = "http://crd.gov.pl/wzor/2025/06/25/13775/"
@@ -64,8 +70,29 @@ def _build_issuer(root: ElementTree.Element, invoice: Invoice) -> None:
 def _build_receiver(root: ElementTree.Element, invoice: Invoice) -> None:
     receiver = ElementTree.SubElement(root, "Podmiot2")
     receiver_id_data = ElementTree.SubElement(receiver, "DaneIdentyfikacyjne")
-    receiver_nip = ElementTree.SubElement(receiver_id_data, "NIP")
-    receiver_nip.text = invoice.recipient.identification_data.nip
+
+    id_data = invoice.recipient.identification_data
+    if isinstance(id_data, NipIdentification):
+        nip_el = ElementTree.SubElement(receiver_id_data, "NIP")
+        nip_el.text = id_data.nip
+    elif isinstance(id_data, EuVatIdentification):
+        kod_ue = ElementTree.SubElement(receiver_id_data, "KodUE")
+        kod_ue.text = id_data.eu_country_code
+        nr_vat = ElementTree.SubElement(receiver_id_data, "NrVatUE")
+        nr_vat.text = id_data.eu_vat_number
+    elif isinstance(id_data, ForeignIdentification):
+        if id_data.country_code is not None:
+            kod_kraju = ElementTree.SubElement(receiver_id_data, "KodKraju")
+            kod_kraju.text = id_data.country_code
+        nr_id = ElementTree.SubElement(receiver_id_data, "NrID")
+        nr_id.text = id_data.tax_id
+    elif isinstance(id_data, NoIdentification):
+        brak_id = ElementTree.SubElement(receiver_id_data, "BrakID")
+        brak_id.text = "1"
+
+    if invoice.recipient.name is not None:
+        nazwa = ElementTree.SubElement(receiver, "Nazwa")
+        nazwa.text = invoice.recipient.name
 
     if invoice.recipient.address is not None:
         addr = invoice.recipient.address

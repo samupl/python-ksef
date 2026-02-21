@@ -62,16 +62,63 @@ issuer = Issuer(
 
 ## Subject (Recipient)
 
-Information about the invoice recipient (buyer).
+Information about the invoice recipient (buyer). The `identification_data` field accepts four identification types matching the FA(3) schema's `DaneIdentyfikacyjne` choices for `Podmiot2`.
+
+### Identification types
+
+**Polish company (NIP)**
 
 ```python
-from ksef.models.invoice import Subject, SubjectIdentificationData, Address
+from ksef.models.invoice import Subject, NipIdentification
 
 recipient = Subject(
-    identification_data=SubjectIdentificationData(
-        nip="0987654321",
-    ),
-    # Optional: buyer address
+    identification_data=NipIdentification(nip="0987654321"),
+)
+```
+
+> `SubjectIdentificationData` is a backwards-compatible alias for `NipIdentification`.
+
+**EU company (VAT)**
+
+```python
+from ksef.models.invoice import Subject, EuVatIdentification
+
+recipient = Subject(
+    identification_data=EuVatIdentification(eu_country_code="DE", eu_vat_number="123456789"),
+    name="Deutsche Firma GmbH",
+)
+```
+
+**Non-EU entity**
+
+```python
+from ksef.models.invoice import Subject, ForeignIdentification
+
+recipient = Subject(
+    identification_data=ForeignIdentification(country_code="US", tax_id="EIN123456"),
+    name="American Corp.",
+)
+```
+
+**Individual / no tax ID (B2C)**
+
+```python
+from ksef.models.invoice import Subject, NoIdentification
+
+recipient = Subject(
+    identification_data=NoIdentification(),
+    name="Jan Kowalski",
+)
+```
+
+### Full example with address
+
+```python
+from ksef.models.invoice import Subject, NipIdentification, Address
+
+recipient = Subject(
+    identification_data=NipIdentification(nip="0987654321"),
+    name="Firma Testowa Sp. z o.o.",
     address=Address(
         country_code="PL",
         city="Kraków",
@@ -87,10 +134,20 @@ recipient = Subject(
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `identification_data` | `SubjectIdentificationData` | Yes | Recipient NIP |
+| `identification_data` | `NipIdentification \| EuVatIdentification \| ForeignIdentification \| NoIdentification` | Yes | Buyer identification (see types below) |
+| `name` | `str` | No | Buyer name (maps to `Nazwa` in `Podmiot2`) |
 | `address` | `Address` | No | Buyer address (maps to `Adres` in `Podmiot2`) |
 | `jst` | `int` | No | Is the buyer a local government unit? `1` = yes, `2` = no (default: `2`) |
 | `gv` | `int` | No | Is the buyer a government entity? `1` = yes, `2` = no (default: `2`) |
+
+### Identification type fields
+
+| Type | Fields | XML output |
+|------|--------|------------|
+| `NipIdentification` | `nip: str` | `<NIP>` |
+| `EuVatIdentification` | `eu_country_code: str`, `eu_vat_number: str` | `<KodUE>` + `<NrVatUE>` |
+| `ForeignIdentification` | `country_code: Optional[str]`, `tax_id: str` | `<KodKraju>` (optional) + `<NrID>` |
+| `NoIdentification` | *(none)* | `<BrakID>1</BrakID>` |
 
 ---
 

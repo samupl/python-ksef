@@ -1,22 +1,37 @@
 """XML converters used to convert library models into KSEF-compliant XML files."""
-from typing import cast
+from datetime import datetime, timezone
+from typing import Optional, cast
 from xml.etree import ElementTree
 
 from ksef.models.invoice import Invoice
 
+# FA(3) schema namespace
+FA3_NAMESPACE = "http://crd.gov.pl/wzor/2025/06/25/13775/"
+FA3_SCHEMA_LOCATION = (
+    "http://crd.gov.pl/wzor/2025/06/25/13775/ http://crd.gov.pl/wzor/2025/06/25/13775/schemat.xsd"
+)
 
-def _build_header(root: ElementTree.Element, invoicing_software_name: str) -> None:
+
+def _build_header(
+    root: ElementTree.Element,
+    invoicing_software_name: str,
+    creation_datetime: Optional[datetime] = None,
+) -> None:
     header = ElementTree.SubElement(root, "Naglowek")
     form_code = ElementTree.SubElement(
         header,
         "KodFormularza",
-        attrib={"kodSystemowy": "FA (1)", "wersjaSchemy": "1-0E"},
+        attrib={"kodSystemowy": "FA (3)", "wersjaSchemy": "1-0E"},
     )
     form_variant = ElementTree.SubElement(header, "WariantFormularza")
+    creation_date = ElementTree.SubElement(header, "DataWytworzeniaFa")
     system_info = ElementTree.SubElement(header, "SystemInfo")
 
     form_code.text = "FA"
-    form_variant.text = "1"
+    form_variant.text = "3"
+    # Use provided datetime or current time
+    dt = creation_datetime or datetime.now(tz=timezone.utc)
+    creation_date.text = dt.strftime("%Y-%m-%dT%H:%M:%S")
     system_info.text = invoicing_software_name
 
 
@@ -26,25 +41,24 @@ def _build_issuer(root: ElementTree.Element, invoice: Invoice) -> None:
     issuer_id_data = ElementTree.SubElement(issuer, "DaneIdentyfikacyjne")
     issuer_nip = ElementTree.SubElement(issuer_id_data, "NIP")
     issuer_nip.text = invoice.issuer.identification_data.nip
-    issuer_full_name = ElementTree.SubElement(issuer_id_data, "PelnaNazwa")
+    issuer_full_name = ElementTree.SubElement(issuer_id_data, "Nazwa")
     issuer_full_name.text = invoice.issuer.identification_data.full_name
 
-    issuer_address = ElementTree.SubElement(
-        issuer, "Adres", attrib={"xsi:type": "tns:TAdresPolski"}
-    )
+    issuer_address = ElementTree.SubElement(issuer, "Adres", attrib={"xsi:type": "tns:TAdres"})
     issuer_country_code = ElementTree.SubElement(issuer_address, "KodKraju")
-    issuer_city = ElementTree.SubElement(issuer_address, "Miejscowosc")
-    issuer_street = ElementTree.SubElement(issuer_address, "Ulica")
-    issuer_house_number = ElementTree.SubElement(issuer_address, "NrDomu")
-    issuer_apartment_number = ElementTree.SubElement(issuer_address, "NrLokalu")
-    issuer_postal_code = ElementTree.SubElement(issuer_address, "KodPocztowy")
-
     issuer_country_code.text = invoice.issuer.address.country_code
-    issuer_city.text = invoice.issuer.address.city
-    issuer_street.text = invoice.issuer.address.street
-    issuer_house_number.text = invoice.issuer.address.house_number
-    issuer_apartment_number.text = invoice.issuer.address.apartment_number
-    issuer_postal_code.text = invoice.issuer.address.postal_code
+
+    # AdresL1: street + house number (+ apartment number)
+    addr = invoice.issuer.address
+    address_l1 = f"{addr.street} {addr.house_number}"
+    if addr.apartment_number is not None:
+        address_l1 += f"/{addr.apartment_number}"
+    issuer_address_l1 = ElementTree.SubElement(issuer_address, "AdresL1")
+    issuer_address_l1.text = address_l1
+
+    # AdresL2: postal code + city
+    issuer_address_l2 = ElementTree.SubElement(issuer_address, "AdresL2")
+    issuer_address_l2.text = f"{addr.postal_code} {addr.city}"
 
 
 def _build_receiver(root: ElementTree.Element, invoice: Invoice) -> None:
@@ -53,45 +67,81 @@ def _build_receiver(root: ElementTree.Element, invoice: Invoice) -> None:
     receiver_nip = ElementTree.SubElement(receiver_id_data, "NIP")
     receiver_nip.text = invoice.recipient.identification_data.nip
 
+    if invoice.recipient.address is not None:
+        addr = invoice.recipient.address
+        receiver_address = ElementTree.SubElement(
+            receiver, "Adres", attrib={"xsi:type": "tns:TAdres"}
+        )
+        receiver_country_code = ElementTree.SubElement(receiver_address, "KodKraju")
+        receiver_country_code.text = addr.country_code
+
+        address_l1 = f"{addr.street} {addr.house_number}"
+        if addr.apartment_number is not None:
+            address_l1 += f"/{addr.apartment_number}"
+        receiver_address_l1 = ElementTree.SubElement(receiver_address, "AdresL1")
+        receiver_address_l1.text = address_l1
+
+        receiver_address_l2 = ElementTree.SubElement(receiver_address, "AdresL2")
+        receiver_address_l2.text = f"{addr.postal_code} {addr.city}"
+
+    receiver_jst = ElementTree.SubElement(receiver, "JST")
+    receiver_jst.text = str(invoice.recipient.jst)
+    receiver_gv = ElementTree.SubElement(receiver, "GV")
+    receiver_gv.text = str(invoice.recipient.gv)
+
 
 def _build_invoice_data_annotations(invoice_data: ElementTree.Element, invoice: Invoice) -> None:
-    invoice_data_annotations = ElementTree.SubElement(invoice_data, "Adnotacje")
-    invoice_data_annotations_tax_settlement_on_payment = ElementTree.SubElement(
-        invoice_data_annotations, "P_16"
-    )
-    invoice_data_annotations_self_invoice = ElementTree.SubElement(invoice_data_annotations, "P_17")
-    invoice_data_annotations_reverse_charge = ElementTree.SubElement(
-        invoice_data_annotations, "P_18"
-    )
-    invoice_data_annotations_split_payment = ElementTree.SubElement(
-        invoice_data_annotations, "P_18A"
-    )
-    invoice_data_annotations_free_from_vat = ElementTree.SubElement(
-        invoice_data_annotations, "P_19"
-    )
-    invoice_data_annotations_intra_community_supply_of_new_transport_methods = (
-        ElementTree.SubElement(invoice_data_annotations, "P_22")
-    )
-    invoice_data_annotations_simplified_procedure_by_second_tax_payer = ElementTree.SubElement(
-        invoice_data_annotations, "P_23"
-    )
-    invoice_data_annotations_margin_procedure = ElementTree.SubElement(
-        invoice_data_annotations, "P_PMarzy"
-    )
+    annotations = ElementTree.SubElement(invoice_data, "Adnotacje")
+    data = invoice.invoice_data.invoice_annotations
 
-    data = invoice.invoice_data
-    invoice_data_annotations_tax_settlement_on_payment.text = (
-        data.invoice_annotations.tax_settlement_on_payment.value
-    )
-    invoice_data_annotations_self_invoice.text = data.invoice_annotations.self_invoice.value
-    invoice_data_annotations_reverse_charge.text = data.invoice_annotations.reverse_charge.value
-    invoice_data_annotations_split_payment.text = data.invoice_annotations.split_payment.value
-    invoice_data_annotations_free_from_vat.text = data.invoice_annotations.free_from_vat.value
-    ics_value = data.invoice_annotations.intra_community_supply_of_new_transport_methods.value
-    invoice_data_annotations_intra_community_supply_of_new_transport_methods.text = ics_value
-    sp_value = data.invoice_annotations.simplified_procedure_by_second_tax_payer.value
-    invoice_data_annotations_simplified_procedure_by_second_tax_payer.text = sp_value
-    invoice_data_annotations_margin_procedure.text = data.invoice_annotations.margin_procedure.value
+    # P_16 - metoda kasowa
+    p16 = ElementTree.SubElement(annotations, "P_16")
+    p16.text = data.tax_settlement_on_payment.value
+
+    # P_17 - samofakturowanie
+    p17 = ElementTree.SubElement(annotations, "P_17")
+    p17.text = data.self_invoice.value
+
+    # P_18 - odwrotne obciążenie
+    p18 = ElementTree.SubElement(annotations, "P_18")
+    p18.text = data.reverse_charge.value
+
+    # P_18A - mechanizm podzielonej płatności
+    p18a = ElementTree.SubElement(annotations, "P_18A")
+    p18a.text = data.split_payment.value
+
+    # Zwolnienie - wrapper for P_19/P_19N
+    zwolnienie = ElementTree.SubElement(annotations, "Zwolnienie")
+    if data.free_from_vat.value == "1":
+        p19 = ElementTree.SubElement(zwolnienie, "P_19")
+        p19.text = "1"
+    else:
+        p19n = ElementTree.SubElement(zwolnienie, "P_19N")
+        p19n.text = "1"
+
+    # NoweSrodkiTransportu - wrapper for P_22/P_22N
+    nst = ElementTree.SubElement(annotations, "NoweSrodkiTransportu")
+    if data.intra_community_supply_of_new_transport_methods.value == "1":
+        p22 = ElementTree.SubElement(nst, "P_22")
+        p22.text = "1"
+        p42_5 = ElementTree.SubElement(nst, "P_42_5")
+        p42_5.text = "2"
+    else:
+        p22n = ElementTree.SubElement(nst, "P_22N")
+        p22n.text = "1"
+
+    # P_23 - procedura uproszczona
+    p23 = ElementTree.SubElement(annotations, "P_23")
+    p23.text = data.simplified_procedure_by_second_tax_payer.value
+
+    # PMarzy - wrapper for P_PMarzy/P_PMarzyN
+    pmarzy = ElementTree.SubElement(annotations, "PMarzy")
+    if data.margin_procedure.value == "1":
+        p_pm = ElementTree.SubElement(pmarzy, "P_PMarzy")
+        p_pm.text = "1"
+    else:
+        p_pmn = ElementTree.SubElement(pmarzy, "P_PMarzyN")
+        p_pmn.text = "1"
 
 
 def _build_invoice_data(root: ElementTree.Element, invoice: Invoice) -> None:
@@ -114,15 +164,8 @@ def _build_invoice_data(root: ElementTree.Element, invoice: Invoice) -> None:
 
     invoice_data_type.text = invoice.invoice_data.invoice_type.value
 
-    # region rows
-    invoice_data_rows = ElementTree.SubElement(invoice_data, "FaWiersze")
-    invoice_data_rows_count = ElementTree.SubElement(invoice_data_rows, "LiczbaWierszyFaktury")
-    # TODO: What is 'WartoscWierszyFaktury1 seen in webinar? https://www.youtube.com/watch?v=dnBGO6IPtzA
-
-    invoice_data_rows_count.text = str(len(invoice.invoice_data.invoice_rows.rows))
-
     for index, row in enumerate(invoice.invoice_data.invoice_rows.rows, start=1):
-        invoice_data_row = ElementTree.SubElement(invoice_data_rows, "FaWiersz")
+        invoice_data_row = ElementTree.SubElement(invoice_data, "FaWiersz")
         invoice_data_row_number = ElementTree.SubElement(invoice_data_row, "NrWierszaFa")
         invoice_data_row_name = ElementTree.SubElement(invoice_data_row, "P_7")
         invoice_data_row_tax_rate = ElementTree.SubElement(invoice_data_row, "P_12")
@@ -130,23 +173,24 @@ def _build_invoice_data(root: ElementTree.Element, invoice: Invoice) -> None:
         invoice_data_row_number.text = str(index)
         invoice_data_row_name.text = row.name
         invoice_data_row_tax_rate.text = str(row.tax)
-    # endregion
-    # endregion
 
 
 def convert_invoice_to_xml(invoice: Invoice, invoicing_software_name: str = "python-ksef") -> bytes:
-    """Convert an invoice model instance to XML document representing this invoice."""
+    """Convert an invoice model instance to XML document representing this invoice.
+
+    Uses FA(3) schema format (http://crd.gov.pl/wzor/2025/06/25/13775/).
+    """
     root = ElementTree.Element(
         "Faktura",
         attrib={
-            "xmlns": "http://ksef.mf.gov.pl/wzor/2021/08/05/08051/",
+            "xmlns": FA3_NAMESPACE,
             "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "xmlns:tns": "http://ksef.mf.gov.pl/wzor/2021/08/05/08051/",
-            "xsi:schemaLocation": "http://crd.gov.pl/wzor/2021/11/29/11089/schemat.xsd",
+            "xmlns:tns": FA3_NAMESPACE,
+            "xsi:schemaLocation": FA3_SCHEMA_LOCATION,
         },
     )
 
-    _build_header(root, invoicing_software_name)
+    _build_header(root, invoicing_software_name, invoice.creation_datetime)
     _build_issuer(root, invoice)
     _build_receiver(root, invoice)
     _build_invoice_data(root, invoice)

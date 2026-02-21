@@ -1,5 +1,5 @@
 """Test suite for XML converters."""
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -95,6 +95,64 @@ def test_simple() -> None:
                 ]
             ),
         ),
+        creation_datetime=datetime(2024, 1, 22, 10, 30, 0, tzinfo=timezone.utc),
     )
     actual_content = convert_invoice_to_xml(invoice)
     assert_xml_equal(actual_content=actual_content, expected_content=expected_content)
+
+
+def test_without_apartment_number() -> None:
+    """Test that NrLokalu element is omitted when apartment_number is None."""
+    with (RESOURCES_DIR / "invoice_without_apartment.xml").open("rb") as fd:
+        expected_content = fd.read()
+
+    invoice = Invoice(
+        issuer=Issuer(
+            identification_data=IssuerIdentificationData(
+                nip="1111111111", full_name="Example Company 1 Sp z o. o."
+            ),
+            email="example@example.com",
+            phone="+48 111111111",
+            address=Address(
+                country_code="PL",
+                city="Warszawa",
+                street="Kwiatowa",
+                house_number="1",
+                apartment_number=None,
+                postal_code="00-001",
+            ),
+        ),
+        recipient=Subject(
+            identification_data=SubjectIdentificationData(
+                nip="2222222222",
+            ),
+        ),
+        invoice_data=InvoiceData(
+            currency_code="PLN",
+            issue_date=date(2024, 1, 22),
+            issue_number="FA/1/2024",
+            sell_date=date(2024, 1, 1),
+            total_amount=Decimal("450.00"),
+            invoice_annotations=InvoiceAnnotations(
+                tax_settlement_on_payment=TaxSettlementOnPayment.REGULAR,
+                self_invoice=SelfInvoicing.NO,
+                reverse_charge=ReverseCharge.NO,
+                split_payment=SplitPayment.NO,
+                free_from_vat=FreeFromVat.NO,
+                intra_community_supply_of_new_transport_methods=IntraCommunitySupplyOfNewTransportMethods.NO,
+                simplified_procedure_by_second_tax_payer=SimplifiedProcedureBySecondTaxPayer.NO,
+                margin_procedure=MarginProcedure.NO,
+            ),
+            invoice_type=InvoiceType.REGULAR_VAT,
+            invoice_rows=InvoiceRows(
+                rows=[
+                    InvoiceRow(name="Example service 1", tax=23),
+                    InvoiceRow(name="Example service 2", tax=8),
+                ]
+            ),
+        ),
+        creation_datetime=datetime(2024, 1, 22, 10, 30, 0, tzinfo=timezone.utc),
+    )
+    actual_content = convert_invoice_to_xml(invoice)
+    assert_xml_equal(actual_content=actual_content, expected_content=expected_content)
+    assert b"NrLokalu" not in actual_content

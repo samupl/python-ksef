@@ -18,7 +18,7 @@
         </DaneIdentyfikacyjne>
         <Adres xsi:type="tns:TAdres">
             <KodKraju>PL</KodKraju>
-            <AdresL1>Kwiatowa 1/2</AdresL1>
+            <AdresL1>Kwiatowa 1</AdresL1>
             <AdresL2>00-001 Warszawa</AdresL2>
         </Adres>
     </Podmiot1>

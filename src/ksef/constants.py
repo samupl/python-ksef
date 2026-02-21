@@ -24,3 +24,12 @@ URL_AUTH_TOKEN_REFRESH = "auth/token/refresh"  # noqa: S105
 URL_PUBLIC_KEY_CERTS = "security/public-key-certificates"
 
 URL_QUERY_INVOICES = "invoices/query/metadata"
+
+URL_SESSIONS_ONLINE = "sessions/online"
+URL_SESSIONS_ONLINE_INVOICES = "sessions/online/{reference_number}/invoices"
+URL_SESSIONS_ONLINE_CLOSE = "sessions/online/{reference_number}/close"
+URL_SESSIONS_STATUS = "sessions/{reference_number}"
+URL_SESSIONS_INVOICES = "sessions/{reference_number}/invoices"
+URL_SESSIONS_INVOICES_STATUS = "sessions/{reference_number}/invoices/{invoice_reference_number}"
+
+URL_INVOICES_GET = "invoices/ksef/{ksef_reference_number}"

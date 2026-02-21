@@ -5,11 +5,28 @@ credentials are skipped automatically.
 """
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Generator, Optional
 
 import pytest
+import responses
 
 from ksef.constants import Environment
+
+
+@pytest.fixture(autouse=True)
+def _allow_real_requests() -> Generator[None, None, None]:
+    """Allow real HTTP requests to KSEF TEST and DEMO environments only.
+
+    The pytest-responses plugin blocks all HTTP requests by default.
+    This fixture adds passthru for TEST and DEMO environments only.
+    PRODUCTION is intentionally excluded to prevent accidental requests.
+    """
+    with responses.RequestsMock() as rsps:
+        rsps.add_passthru("https://api-test.ksef.mf.gov.pl/")
+        rsps.add_passthru("https://api-demo.ksef.mf.gov.pl/")
+        # PRODUCTION (https://api.ksef.mf.gov.pl/) intentionally NOT included
+        yield
+
 
 KSEF_NIP = os.environ.get("KSEF_NIP")
 KSEF_TOKEN = os.environ.get("KSEF_TOKEN")
@@ -103,9 +120,14 @@ def client_from_token(
     token_authorization: "ksef.auth.token.TokenAuthorization",  # type: ignore[name-defined]  # noqa: F821
     nip: str,
     environment: Environment,
-) -> "ksef.client.Client":  # type: ignore[name-defined]  # noqa: F821
-    """Fully authorized Client using token auth."""
+) -> Generator["ksef.client.Client", None, None]:  # type: ignore[name-defined]  # noqa: F821
+    """Fully authorized Client using token auth.
+
+    Yields the client and ensures the underlying session is closed after use.
+    """
     from ksef.client import Client
 
     token_authorization.authorize(nip=nip)
-    return Client(authorization=token_authorization, environment=environment)
+    client = Client(authorization=token_authorization, environment=environment)
+    yield client
+    client.session.close()

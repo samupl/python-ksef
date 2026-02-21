@@ -1,5 +1,5 @@
 """Invoice model."""
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
@@ -53,6 +53,9 @@ class Subject(BaseModel):
     """
 
     identification_data: SubjectIdentificationData
+    address: Optional[Address] = None
+    jst: int = 2
+    gv: int = 2
 
 
 class Issuer(BaseModel):
@@ -122,3 +125,4 @@ class Invoice(BaseModel):
     issuer: Issuer
     recipient: Subject
     invoice_data: InvoiceData
+    creation_datetime: Optional[datetime] = None  # For DataWytworzeniaFa in FA(3)

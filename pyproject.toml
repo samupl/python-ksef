@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ksef"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python interface for the KSEF API"
 authors = [{ name = "Jakub Szafrański", email = "kontakt@samu.pl" }]
 requires-python = "~=3.9"

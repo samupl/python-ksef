@@ -1,6 +1,7 @@
 """Models for individual invoice rows/positions."""
 
-from typing import Literal, Sequence
+from decimal import Decimal
+from typing import Literal, Optional, Sequence
 
 from pydantic import BaseModel
 
@@ -37,12 +38,16 @@ TaxRate = Literal[
     "np II",
 ]
 
+# Set of valid P_12 integer rates for quick lookup
+VALID_P12_RATES = {23, 22, 8, 7, 5, 4, 3}
+
 
 class InvoiceRow(BaseModel):
     """Single individual invoice position."""
 
     name: str  # P_7, nazwa (rodzaj) towaru lub usługi
-    tax: TaxRate  # P_12, tax rate
+    tax: Optional[TaxRate] = None  # P_12, standard tax rate
+    tax_oss: Optional[Decimal] = None  # P_12_XII, OSS/IOSS procedure tax rate (arbitrary %)
 
 
 class InvoiceRows(BaseModel):

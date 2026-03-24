@@ -195,11 +195,16 @@ def _build_invoice_data(root: ElementTree.Element, invoice: Invoice) -> None:
         invoice_data_row = ElementTree.SubElement(invoice_data, "FaWiersz")
         invoice_data_row_number = ElementTree.SubElement(invoice_data_row, "NrWierszaFa")
         invoice_data_row_name = ElementTree.SubElement(invoice_data_row, "P_7")
-        invoice_data_row_tax_rate = ElementTree.SubElement(invoice_data_row, "P_12")
 
         invoice_data_row_number.text = str(index)
         invoice_data_row_name.text = row.name
-        invoice_data_row_tax_rate.text = str(row.tax)
+
+        if row.tax_oss is not None:
+            invoice_data_row_tax_oss = ElementTree.SubElement(invoice_data_row, "P_12_XII")
+            invoice_data_row_tax_oss.text = str(row.tax_oss)
+        elif row.tax is not None:
+            invoice_data_row_tax_rate = ElementTree.SubElement(invoice_data_row, "P_12")
+            invoice_data_row_tax_rate.text = str(row.tax)
 
 
 def convert_invoice_to_xml(invoice: Invoice, invoicing_software_name: str = "python-ksef") -> bytes:

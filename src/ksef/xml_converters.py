@@ -91,7 +91,7 @@ def _build_receiver(root: ElementTree.Element, invoice: Invoice) -> None:
         brak_id.text = "1"
 
     if invoice.recipient.name is not None:
-        nazwa = ElementTree.SubElement(receiver, "Nazwa")
+        nazwa = ElementTree.SubElement(receiver_id_data, "Nazwa")
         nazwa.text = invoice.recipient.name
 
     if invoice.recipient.address is not None:

@@ -171,19 +171,56 @@ def _build_invoice_data_annotations(invoice_data: ElementTree.Element, invoice: 
         p_pmn.text = "1"
 
 
+def _build_tax_summary(parent: ElementTree.Element, invoice: Invoice) -> None:
+    """Emit P_13_*/P_14_* tax summary fields. Must be called before P_15."""
+    ts = invoice.invoice_data.tax_summary
+    if ts is None:
+        return
+
+    paired_fields = [
+        (ts.net_standard, "P_13_1", ts.vat_standard, "P_14_1", ts.vat_standard_pln, "P_14_1W"),
+        (ts.net_reduced_1, "P_13_2", ts.vat_reduced_1, "P_14_2", ts.vat_reduced_1_pln, "P_14_2W"),
+        (ts.net_reduced_2, "P_13_3", ts.vat_reduced_2, "P_14_3", ts.vat_reduced_2_pln, "P_14_3W"),
+        (ts.net_flat_rate, "P_13_4", ts.vat_flat_rate, "P_14_4", None, None),
+        (ts.net_oss, "P_13_5", ts.vat_oss, "P_14_5", None, None),
+    ]
+    for net_val, net_tag, vat_val, vat_tag, vat_pln_val, vat_pln_tag in paired_fields:
+        if net_val is not None:
+            ElementTree.SubElement(parent, net_tag).text = str(net_val)
+        if vat_val is not None:
+            ElementTree.SubElement(parent, vat_tag).text = str(vat_val)
+        if vat_pln_val is not None and vat_pln_tag is not None:
+            ElementTree.SubElement(parent, vat_pln_tag).text = str(vat_pln_val)
+
+    net_only_fields = [
+        (ts.net_zero_domestic, "P_13_6_1"),
+        (ts.net_zero_wdt, "P_13_6_2"),
+        (ts.net_zero_export, "P_13_6_3"),
+        (ts.net_exempt, "P_13_7"),
+        (ts.net_not_subject, "P_13_8"),
+        (ts.net_not_subject_art100, "P_13_9"),
+        (ts.net_reverse_charge, "P_13_10"),
+    ]
+    for val, tag in net_only_fields:
+        if val is not None:
+            ElementTree.SubElement(parent, tag).text = str(val)
+
+
 def _build_invoice_data(root: ElementTree.Element, invoice: Invoice) -> None:
     invoice_data = ElementTree.SubElement(root, "Fa")
-    invoice_data_currency_code = ElementTree.SubElement(invoice_data, "KodWaluty")
-    invoice_data_issue_date = ElementTree.SubElement(invoice_data, "P_1")
-    invoice_data_invoice_number = ElementTree.SubElement(invoice_data, "P_2")
-    invoice_data_sell_date = ElementTree.SubElement(invoice_data, "P_6")
-    invoice_data_total_amount = ElementTree.SubElement(invoice_data, "P_15")
 
-    invoice_data_currency_code.text = invoice.invoice_data.currency_code
-    invoice_data_issue_date.text = invoice.invoice_data.issue_date.strftime("%Y-%m-%d")
-    invoice_data_invoice_number.text = invoice.invoice_data.issue_number
-    invoice_data_sell_date.text = invoice.invoice_data.sell_date.strftime("%Y-%m-%d")
-    invoice_data_total_amount.text = str(invoice.invoice_data.total_amount)
+    ElementTree.SubElement(invoice_data, "KodWaluty").text = invoice.invoice_data.currency_code
+    ElementTree.SubElement(invoice_data, "P_1").text = invoice.invoice_data.issue_date.strftime(
+        "%Y-%m-%d"
+    )
+    ElementTree.SubElement(invoice_data, "P_2").text = invoice.invoice_data.issue_number
+    ElementTree.SubElement(invoice_data, "P_6").text = invoice.invoice_data.sell_date.strftime(
+        "%Y-%m-%d"
+    )
+
+    _build_tax_summary(invoice_data, invoice)
+
+    ElementTree.SubElement(invoice_data, "P_15").text = str(invoice.invoice_data.total_amount)
 
     _build_invoice_data_annotations(invoice_data, invoice)
 
@@ -193,18 +230,39 @@ def _build_invoice_data(root: ElementTree.Element, invoice: Invoice) -> None:
 
     for index, row in enumerate(invoice.invoice_data.invoice_rows.rows, start=1):
         invoice_data_row = ElementTree.SubElement(invoice_data, "FaWiersz")
-        invoice_data_row_number = ElementTree.SubElement(invoice_data_row, "NrWierszaFa")
-        invoice_data_row_name = ElementTree.SubElement(invoice_data_row, "P_7")
 
-        invoice_data_row_number.text = str(index)
-        invoice_data_row_name.text = row.name
+        nr = ElementTree.SubElement(invoice_data_row, "NrWierszaFa")
+        nr.text = str(index)
+
+        if row.delivery_date is not None:
+            p_6a = ElementTree.SubElement(invoice_data_row, "P_6A")
+            p_6a.text = row.delivery_date.strftime("%Y-%m-%d")
+
+        p_7 = ElementTree.SubElement(invoice_data_row, "P_7")
+        p_7.text = row.name
+
+        if row.unit_of_measure is not None:
+            p_8a = ElementTree.SubElement(invoice_data_row, "P_8A")
+            p_8a.text = row.unit_of_measure
+
+        if row.quantity is not None:
+            p_8b = ElementTree.SubElement(invoice_data_row, "P_8B")
+            p_8b.text = str(row.quantity)
+
+        if row.unit_net_price is not None:
+            p_9a = ElementTree.SubElement(invoice_data_row, "P_9A")
+            p_9a.text = str(row.unit_net_price)
+
+        if row.net_value is not None:
+            p_11 = ElementTree.SubElement(invoice_data_row, "P_11")
+            p_11.text = str(row.net_value)
 
         if row.tax_oss is not None:
-            invoice_data_row_tax_oss = ElementTree.SubElement(invoice_data_row, "P_12_XII")
-            invoice_data_row_tax_oss.text = str(row.tax_oss)
+            p_12_xii = ElementTree.SubElement(invoice_data_row, "P_12_XII")
+            p_12_xii.text = str(row.tax_oss)
         elif row.tax is not None:
-            invoice_data_row_tax_rate = ElementTree.SubElement(invoice_data_row, "P_12")
-            invoice_data_row_tax_rate.text = str(row.tax)
+            p_12 = ElementTree.SubElement(invoice_data_row, "P_12")
+            p_12.text = str(row.tax)
 
 
 def convert_invoice_to_xml(invoice: Invoice, invoicing_software_name: str = "python-ksef") -> bytes:

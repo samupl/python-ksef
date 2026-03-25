@@ -1,5 +1,6 @@
 """Models for individual invoice rows/positions."""
 
+from datetime import date
 from decimal import Decimal
 from typing import Literal, Optional, Sequence
 
@@ -45,9 +46,14 @@ VALID_P12_RATES = {23, 22, 8, 7, 5, 4, 3}
 class InvoiceRow(BaseModel):
     """Single individual invoice position."""
 
-    name: str  # P_7, nazwa (rodzaj) towaru lub usługi
+    name: str  # P_7, product/service name
+    unit_of_measure: Optional[str] = None  # P_8A, unit of measure (e.g. "szt", "C62")
+    quantity: Optional[Decimal] = None  # P_8B, quantity
+    unit_net_price: Optional[Decimal] = None  # P_9A, unit net price
+    net_value: Optional[Decimal] = None  # P_11, net sales value
     tax: Optional[TaxRate] = None  # P_12, standard tax rate
     tax_oss: Optional[Decimal] = None  # P_12_XII, OSS/IOSS procedure tax rate (arbitrary %)
+    delivery_date: Optional[date] = None  # P_6A, delivery/service completion date
 
 
 class InvoiceRows(BaseModel):

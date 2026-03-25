@@ -10,6 +10,52 @@ from ksef.models.invoice_annotations import InvoiceAnnotations
 from ksef.models.invoice_rows import InvoiceRows
 
 
+class TaxSummary(BaseModel):
+    """Tax summary totals per rate for the Fa section.
+
+    Each field pair (net + vat) corresponds to a tax rate group.
+    All fields are optional — only include those that apply to the invoice.
+    """
+
+    # 23% or 22% (standard rate)
+    net_standard: Optional[Decimal] = None  # P_13_1
+    vat_standard: Optional[Decimal] = None  # P_14_1
+    vat_standard_pln: Optional[Decimal] = None  # P_14_1W (foreign currency)
+
+    # 8% or 7% (first reduced rate)
+    net_reduced_1: Optional[Decimal] = None  # P_13_2
+    vat_reduced_1: Optional[Decimal] = None  # P_14_2
+    vat_reduced_1_pln: Optional[Decimal] = None  # P_14_2W
+
+    # 5% (second reduced rate)
+    net_reduced_2: Optional[Decimal] = None  # P_13_3
+    vat_reduced_2: Optional[Decimal] = None  # P_14_3
+    vat_reduced_2_pln: Optional[Decimal] = None  # P_14_3W
+
+    # 4% or 3% (taxi flat-rate)
+    net_flat_rate: Optional[Decimal] = None  # P_13_4
+    vat_flat_rate: Optional[Decimal] = None  # P_14_4
+
+    # OSS/IOSS procedure tax
+    net_oss: Optional[Decimal] = None
+    vat_oss: Optional[Decimal] = None
+
+    # 0% rates (no VAT fields — VAT is zero)
+    net_zero_domestic: Optional[Decimal] = None
+    net_zero_wdt: Optional[Decimal] = None
+    net_zero_export: Optional[Decimal] = None
+
+    # Exempt from tax
+    net_exempt: Optional[Decimal] = None
+
+    # Not subject to taxation
+    net_not_subject: Optional[Decimal] = None  # P_13_8 (np I)
+    net_not_subject_art100: Optional[Decimal] = None  # P_13_9 (np II)
+
+    # Reverse charge (oo)
+    net_reverse_charge: Optional[Decimal] = None  # P_13_10
+
+
 class IssuerIdentificationData(BaseModel):
     """
     Subject identification data.
@@ -132,6 +178,7 @@ class InvoiceData(BaseModel):
     issue_number: str
     sell_date: date
     total_amount: Decimal
+    tax_summary: Optional[TaxSummary] = None
     invoice_annotations: InvoiceAnnotations
     invoice_type: InvoiceType
     invoice_rows: InvoiceRows

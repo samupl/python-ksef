@@ -2,7 +2,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 from pydantic import BaseModel
 
@@ -125,6 +125,33 @@ class Subject(BaseModel):
     gv: int = 2
 
 
+# Podmiot3 role constants (TRolaPodmiotu3)
+ROLE_FAKTOR = 1
+ROLE_RECEIVER = 2
+ROLE_ORIGINAL_ENTITY = 3
+ROLE_ADDITIONAL_BUYER = 4
+ROLE_INVOICE_ISSUER = 5
+ROLE_PAYER = 6
+ROLE_JST_ISSUER = 7
+ROLE_JST_RECEIVER = 8
+ROLE_VAT_GROUP_ISSUER = 9
+ROLE_VAT_GROUP_RECEIVER = 10
+
+
+class AdditionalRecipient(BaseModel):
+    """Additional party on the invoice (Podmiot3).
+
+    Used for e.g. a government receiver (school) when the buyer is a city hall.
+    """
+
+    identification_data: Union[
+        NipIdentification, EuVatIdentification, ForeignIdentification, NoIdentification
+    ]
+    name: Optional[str] = None
+    address: Optional[Address] = None
+    role: int
+
+
 class Issuer(BaseModel):
     """
     Invoice issuer.
@@ -167,6 +194,18 @@ class InvoiceType(Enum):
     CORRECTION_SETTLEMENT = "KOR_ROZ"
 
 
+class AdditionalDescription(BaseModel):
+    """Key-value note on the invoice (DodatkowyOpis / TKluczWartosc).
+
+    Used for additional data required by law, such as exchange rate source.
+    Max 256 chars each for key and value.
+    """
+
+    key: str
+    value: str
+    row_number: Optional[int] = None
+
+
 class InvoiceData(BaseModel):
     """Invoice data.
 
@@ -181,6 +220,7 @@ class InvoiceData(BaseModel):
     tax_summary: Optional[TaxSummary] = None
     invoice_annotations: InvoiceAnnotations
     invoice_type: InvoiceType
+    additional_descriptions: Sequence[AdditionalDescription] = ()
     invoice_rows: InvoiceRows
 
 
@@ -192,5 +232,6 @@ class Invoice(BaseModel):
 
     issuer: Issuer
     recipient: Subject
+    additional_recipients: Sequence[AdditionalRecipient] = ()
     invoice_data: InvoiceData
     creation_datetime: Optional[datetime] = None  # For DataWytworzeniaFa in FA(3)

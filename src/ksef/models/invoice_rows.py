@@ -54,6 +54,7 @@ class InvoiceRow(BaseModel):
     tax: Optional[TaxRate] = None  # P_12, standard tax rate
     tax_oss: Optional[Decimal] = None  # P_12_XII, OSS/IOSS procedure tax rate (arbitrary %)
     delivery_date: Optional[date] = None  # P_6A, delivery/service completion date
+    exchange_rate: Optional[Decimal] = None  # KursWaluty, exchange rate for foreign currency
 
 
 class InvoiceRows(BaseModel):

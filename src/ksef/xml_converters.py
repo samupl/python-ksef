@@ -117,6 +117,45 @@ def _build_receiver(root: ElementTree.Element, invoice: Invoice) -> None:
     receiver_gv.text = str(invoice.recipient.gv)
 
 
+def _build_additional_recipients(root: ElementTree.Element, invoice: Invoice) -> None:
+    """Build Podmiot3 elements for additional recipients."""
+    for recipient in invoice.additional_recipients:
+        podmiot3 = ElementTree.SubElement(root, "Podmiot3")
+
+        # DaneIdentyfikacyjne
+        id_data = ElementTree.SubElement(podmiot3, "DaneIdentyfikacyjne")
+        rd = recipient.identification_data
+
+        if isinstance(rd, NipIdentification):
+            ElementTree.SubElement(id_data, "NIP").text = rd.nip
+        elif isinstance(rd, EuVatIdentification):
+            ElementTree.SubElement(id_data, "KodUE").text = rd.eu_country_code
+            ElementTree.SubElement(id_data, "NrVatUE").text = rd.eu_vat_number
+        elif isinstance(rd, ForeignIdentification):
+            if rd.country_code is not None:
+                ElementTree.SubElement(id_data, "KodKraju").text = rd.country_code
+            ElementTree.SubElement(id_data, "NrID").text = rd.tax_id
+        elif isinstance(rd, NoIdentification):
+            ElementTree.SubElement(id_data, "BrakID").text = "1"
+
+        if recipient.name is not None:
+            ElementTree.SubElement(id_data, "Nazwa").text = recipient.name
+
+        # Adres
+        if recipient.address is not None:
+            addr = recipient.address
+            addr_el = ElementTree.SubElement(podmiot3, "Adres", attrib={"xsi:type": "tns:TAdres"})
+            ElementTree.SubElement(addr_el, "KodKraju").text = addr.country_code
+            address_l1 = f"{addr.street} {addr.house_number}"
+            if addr.apartment_number is not None:
+                address_l1 += f"/{addr.apartment_number}"
+            ElementTree.SubElement(addr_el, "AdresL1").text = address_l1
+            ElementTree.SubElement(addr_el, "AdresL2").text = f"{addr.postal_code} {addr.city}"
+
+        # Rola
+        ElementTree.SubElement(podmiot3, "Rola").text = str(recipient.role)
+
+
 def _build_invoice_data_annotations(invoice_data: ElementTree.Element, invoice: Invoice) -> None:
     annotations = ElementTree.SubElement(invoice_data, "Adnotacje")
     data = invoice.invoice_data.invoice_annotations
@@ -206,6 +245,46 @@ def _build_tax_summary(parent: ElementTree.Element, invoice: Invoice) -> None:
             ElementTree.SubElement(parent, tag).text = str(val)
 
 
+def _build_additional_descriptions(parent: ElementTree.Element, invoice: Invoice) -> None:
+    """Emit DodatkowyOpis elements for additional key-value notes."""
+    for desc in invoice.invoice_data.additional_descriptions:
+        dodatkowy_opis = ElementTree.SubElement(parent, "DodatkowyOpis")
+        if desc.row_number is not None:
+            ElementTree.SubElement(dodatkowy_opis, "NrWiersza").text = str(desc.row_number)
+        ElementTree.SubElement(dodatkowy_opis, "Klucz").text = desc.key
+        ElementTree.SubElement(dodatkowy_opis, "Wartosc").text = desc.value
+
+
+def _build_invoice_rows(parent: ElementTree.Element, invoice: Invoice) -> None:
+    """Emit FaWiersz elements for each invoice row."""
+    for index, row in enumerate(invoice.invoice_data.invoice_rows.rows, start=1):
+        fa_wiersz = ElementTree.SubElement(parent, "FaWiersz")
+
+        ElementTree.SubElement(fa_wiersz, "NrWierszaFa").text = str(index)
+
+        if row.delivery_date is not None:
+            ElementTree.SubElement(fa_wiersz, "P_6A").text = row.delivery_date.strftime("%Y-%m-%d")
+
+        ElementTree.SubElement(fa_wiersz, "P_7").text = row.name
+
+        if row.unit_of_measure is not None:
+            ElementTree.SubElement(fa_wiersz, "P_8A").text = row.unit_of_measure
+        if row.quantity is not None:
+            ElementTree.SubElement(fa_wiersz, "P_8B").text = str(row.quantity)
+        if row.unit_net_price is not None:
+            ElementTree.SubElement(fa_wiersz, "P_9A").text = str(row.unit_net_price)
+        if row.net_value is not None:
+            ElementTree.SubElement(fa_wiersz, "P_11").text = str(row.net_value)
+
+        if row.tax_oss is not None:
+            ElementTree.SubElement(fa_wiersz, "P_12_XII").text = str(row.tax_oss)
+        elif row.tax is not None:
+            ElementTree.SubElement(fa_wiersz, "P_12").text = str(row.tax)
+
+        if row.exchange_rate is not None:
+            ElementTree.SubElement(fa_wiersz, "KursWaluty").text = str(row.exchange_rate)
+
+
 def _build_invoice_data(root: ElementTree.Element, invoice: Invoice) -> None:
     invoice_data = ElementTree.SubElement(root, "Fa")
 
@@ -224,45 +303,12 @@ def _build_invoice_data(root: ElementTree.Element, invoice: Invoice) -> None:
 
     _build_invoice_data_annotations(invoice_data, invoice)
 
-    invoice_data_type = ElementTree.SubElement(invoice_data, "RodzajFaktury")
+    ElementTree.SubElement(
+        invoice_data, "RodzajFaktury"
+    ).text = invoice.invoice_data.invoice_type.value
 
-    invoice_data_type.text = invoice.invoice_data.invoice_type.value
-
-    for index, row in enumerate(invoice.invoice_data.invoice_rows.rows, start=1):
-        invoice_data_row = ElementTree.SubElement(invoice_data, "FaWiersz")
-
-        nr = ElementTree.SubElement(invoice_data_row, "NrWierszaFa")
-        nr.text = str(index)
-
-        if row.delivery_date is not None:
-            p_6a = ElementTree.SubElement(invoice_data_row, "P_6A")
-            p_6a.text = row.delivery_date.strftime("%Y-%m-%d")
-
-        p_7 = ElementTree.SubElement(invoice_data_row, "P_7")
-        p_7.text = row.name
-
-        if row.unit_of_measure is not None:
-            p_8a = ElementTree.SubElement(invoice_data_row, "P_8A")
-            p_8a.text = row.unit_of_measure
-
-        if row.quantity is not None:
-            p_8b = ElementTree.SubElement(invoice_data_row, "P_8B")
-            p_8b.text = str(row.quantity)
-
-        if row.unit_net_price is not None:
-            p_9a = ElementTree.SubElement(invoice_data_row, "P_9A")
-            p_9a.text = str(row.unit_net_price)
-
-        if row.net_value is not None:
-            p_11 = ElementTree.SubElement(invoice_data_row, "P_11")
-            p_11.text = str(row.net_value)
-
-        if row.tax_oss is not None:
-            p_12_xii = ElementTree.SubElement(invoice_data_row, "P_12_XII")
-            p_12_xii.text = str(row.tax_oss)
-        elif row.tax is not None:
-            p_12 = ElementTree.SubElement(invoice_data_row, "P_12")
-            p_12.text = str(row.tax)
+    _build_additional_descriptions(invoice_data, invoice)
+    _build_invoice_rows(invoice_data, invoice)
 
 
 def convert_invoice_to_xml(invoice: Invoice, invoicing_software_name: str = "python-ksef") -> bytes:
@@ -283,6 +329,7 @@ def convert_invoice_to_xml(invoice: Invoice, invoicing_software_name: str = "pyt
     _build_header(root, invoicing_software_name, invoice.creation_datetime)
     _build_issuer(root, invoice)
     _build_receiver(root, invoice)
+    _build_additional_recipients(root, invoice)
     _build_invoice_data(root, invoice)
 
     return cast(bytes, ElementTree.tostring(root, encoding="utf-8", xml_declaration=True))

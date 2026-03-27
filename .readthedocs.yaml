@@ -1,20 +1,18 @@
 # Read the Docs configuration file
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
-# Required
 version: 2
 
-# Set the OS, Python version and other tools you might need
 build:
   os: ubuntu-22.04
   tools:
     python: "3.9"
-  jobs:
-    post_create_environment:
-      - pip install uv
-    post_install:
-      - uv pip install --system .
-      - uv pip install --system mkdocs mkdocs-material
 
 mkdocs:
   configuration: documentation/mkdocs.yml
+
+python:
+  install:
+    - method: pip
+      path: .
+    - requirements: documentation/requirements.txt

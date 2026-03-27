@@ -10,10 +10,11 @@ The root invoice model.
 from ksef.models.invoice import Invoice
 
 invoice = Invoice(
-    issuer=...,           # Issuer - seller information
-    recipient=...,        # Subject - buyer information
-    invoice_data=...,     # InvoiceData - invoice details
-    creation_datetime=..., # Optional[datetime] - for FA(3) schema
+    issuer=...,                  # Issuer - seller information
+    recipient=...,               # Subject - buyer information
+    additional_recipients=[...], # Optional - Podmiot3 entries
+    invoice_data=...,            # InvoiceData - invoice details
+    creation_datetime=...,       # Optional[datetime] - for FA(3) schema
 )
 ```
 
@@ -21,6 +22,7 @@ invoice = Invoice(
 |-------|------|----------|-------------|
 | `issuer` | `Issuer` | Yes | Seller/issuer information |
 | `recipient` | `Subject` | Yes | Buyer/recipient information |
+| `additional_recipients` | `Sequence[AdditionalRecipient]` | No | Third parties ([Podmiot3](additional-recipients.md)) |
 | `invoice_data` | `InvoiceData` | Yes | Invoice details and line items |
 | `creation_datetime` | `datetime` | No | Invoice creation timestamp (recommended) |
 
@@ -188,7 +190,7 @@ Main invoice data including line items and annotations.
 ```python
 from datetime import date
 from decimal import Decimal
-from ksef.models.invoice import InvoiceData, InvoiceType
+from ksef.models.invoice import InvoiceData, InvoiceType, TaxSummary, AdditionalDescription
 from ksef.models.invoice_rows import InvoiceRows, InvoiceRow
 from ksef.models.invoice_annotations import InvoiceAnnotations, ...
 
@@ -198,7 +200,9 @@ invoice_data = InvoiceData(
     issue_number="FV/2026/001",
     sell_date=date.today(),
     total_amount=Decimal("1230.00"),
+    tax_summary=TaxSummary(...),
     invoice_type=InvoiceType.REGULAR_VAT,
+    additional_descriptions=[AdditionalDescription(...)],
     invoice_rows=InvoiceRows(rows=[...]),
     invoice_annotations=InvoiceAnnotations(...),
 )
@@ -210,10 +214,21 @@ invoice_data = InvoiceData(
 | `issue_date` | `date` | Yes | Invoice issue date |
 | `issue_number` | `str` | Yes | Invoice number (e.g., "FV/2026/001") |
 | `sell_date` | `date` | Yes | Date of sale/service |
-| `total_amount` | `Decimal` | Yes | Total invoice amount |
+| `total_amount` | `Decimal` | Yes | Total gross amount (P_15) |
+| `tax_summary` | [`TaxSummary`](tax-summary.md) | No | Net/VAT totals per rate (P_13/P_14) |
 | `invoice_type` | `InvoiceType` | Yes | Type of invoice |
+| `additional_descriptions` | `Sequence[AdditionalDescription]` | No | Key-value notes (DodatkowyOpis) |
 | `invoice_rows` | `InvoiceRows` | Yes | Line items |
 | `invoice_annotations` | `InvoiceAnnotations` | Yes | Required annotations |
+
+!!! note "AdditionalDescription"
+    Key-value pairs for additional data on the invoice. Common use: exchange rate source info for foreign currency invoices. See the [Foreign Currency](../tutorials/invoices/foreign-currency.md) guide.
+
+    | Field | Type | Required | Description |
+    |-------|------|----------|-------------|
+    | `key` | `str` | Yes | Label (max 256 chars) |
+    | `value` | `str` | Yes | Value (max 256 chars) |
+    | `row_number` | `int` | No | Ties the note to a specific row |
 
 ---
 
@@ -242,21 +257,39 @@ invoice_type = InvoiceType.REGULAR_VAT
 
 ## InvoiceRow
 
-Single line item on an invoice.
+Single line item on an invoice. Only `name` is required — all other fields are optional but recommended for complete invoices.
 
 ```python
-from ksef.models.invoice_rows import InvoiceRow
+from datetime import date
+from decimal import Decimal
+from ksef.models.invoice_rows import InvoiceRow, TAX_23
 
 row = InvoiceRow(
-    name="Consulting services",
-    tax=23,  # VAT rate in percent
+    name="Hosting service - 12 months",
+    unit_of_measure="szt.",
+    quantity=Decimal("1"),
+    unit_net_price=Decimal("100.00"),
+    net_value=Decimal("100.00"),
+    tax=TAX_23,
+    delivery_date=date(2026, 3, 25),
+    exchange_rate=Decimal("4.2867"),  # Foreign currency only
 )
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | `str` | Yes | Name/description of item or service |
-| `tax` | `int` | Yes | VAT rate (e.g., 23, 8, 5, 0) |
+| Field | Type | Required | Description | XML |
+|-------|------|----------|-------------|-----|
+| `name` | `str` | Yes | Product/service name | P_7 |
+| `unit_of_measure` | `str` | No | Unit (e.g. "szt.", "kg") | P_8A |
+| `quantity` | `Decimal` | No | Quantity | P_8B |
+| `unit_net_price` | `Decimal` | No | Net price per unit | P_9A |
+| `net_value` | `Decimal` | No | Total net value for the row | P_11 |
+| `tax` | [`TaxRate`](tax-rates.md) | No | Standard tax rate | P_12 |
+| `tax_oss` | `Decimal` | No | OSS/IOSS tax rate (%) | P_12_XII |
+| `delivery_date` | `date` | No | Delivery/service date | P_6A |
+| `exchange_rate` | `Decimal` | No | Exchange rate (max 6 decimals) | KursWaluty |
+
+!!! tip "tax vs tax_oss"
+    Set exactly one of `tax` or `tax_oss` per row. Use `tax` for rates in the [standard KSeF enum](tax-rates.md). Use `tax_oss` for arbitrary OSS/IOSS percentage rates. See the [Tax Rates](tax-rates.md) reference for details.
 
 ---
 
@@ -265,11 +298,11 @@ row = InvoiceRow(
 Container for invoice line items.
 
 ```python
-from ksef.models.invoice_rows import InvoiceRows, InvoiceRow
+from ksef.models.invoice_rows import InvoiceRows, InvoiceRow, TAX_23
 
 rows = InvoiceRows(rows=[
-    InvoiceRow(name="Service A", tax=23),
-    InvoiceRow(name="Service B", tax=23),
+    InvoiceRow(name="Service A", tax=TAX_23, net_value=Decimal("100.00")),
+    InvoiceRow(name="Service B", tax=TAX_23, net_value=Decimal("200.00")),
 ])
 ```
 

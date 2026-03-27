@@ -29,7 +29,11 @@ nav:
     - Authentication: tutorials/getting-started/authentication.md
   - Invoices:
     - Sending Invoices: tutorials/invoices/sending-invoices.md
+    - Foreign Currency: tutorials/invoices/foreign-currency.md
     - Downloading Invoices: tutorials/invoices/downloading-invoices.md
   - Reference:
     - Invoice Models: reference/invoice-models.md
+    - Tax Rates: reference/tax-rates.md
+    - Tax Summary: reference/tax-summary.md
+    - Additional Recipients: reference/additional-recipients.md
     - Invoice Annotations: reference/invoice-annotations.md

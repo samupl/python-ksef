@@ -206,6 +206,30 @@ class AdditionalDescription(BaseModel):
     row_number: Optional[int] = None
 
 
+# FormaPlatnosci enum values (TFormaPlatnosci in FA(3) schema)
+PAYMENT_METHOD_CASH = 1  # gotówka
+PAYMENT_METHOD_CARD = 2  # karta
+PAYMENT_METHOD_VOUCHER = 3  # bon
+PAYMENT_METHOD_CHECK = 4  # czek
+PAYMENT_METHOD_CREDIT = 5  # kredyt
+PAYMENT_METHOD_BANK_TRANSFER = 6  # przelew
+PAYMENT_METHOD_MOBILE = 7  # mobilna
+
+
+class PaymentInfo(BaseModel):
+    """Payment information for the invoice (Platnosc element in Fa section).
+
+    All fields are optional — include only those that apply.
+    """
+
+    is_paid: bool = False  # Zaplacono — flag "1" if fully paid
+    payment_date: Optional[date] = None  # DataZaplaty — date of payment
+    due_date: Optional[date] = None  # TerminPlatnosci > Termin — due date
+    due_description: Optional[str] = None  # TerminPlatnosci > TerminOpis
+    method: Optional[int] = None  # FormaPlatnosci — use PAYMENT_METHOD_* constants
+    bank_account_number: Optional[str] = None  # RachunekBankowy > NrRB
+
+
 class InvoiceData(BaseModel):
     """Invoice data.
 
@@ -222,6 +246,7 @@ class InvoiceData(BaseModel):
     invoice_type: InvoiceType
     additional_descriptions: Sequence[AdditionalDescription] = ()
     invoice_rows: InvoiceRows
+    payment_info: Optional[PaymentInfo] = None
 
 
 class Invoice(BaseModel):

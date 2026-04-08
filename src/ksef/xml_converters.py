@@ -9,6 +9,7 @@ from ksef.models.invoice import (
     Invoice,
     NipIdentification,
     NoIdentification,
+    PaymentInfo,
 )
 
 # FA(3) schema namespace
@@ -250,6 +251,35 @@ def _build_additional_descriptions(parent: ElementTree.Element, invoice: Invoice
         ElementTree.SubElement(dodatkowy_opis, "Wartosc").text = desc.value
 
 
+def _build_payment_info(parent: ElementTree.Element, payment: PaymentInfo) -> None:
+    """Emit Platnosc element with payment details."""
+    platnosc = ElementTree.SubElement(parent, "Platnosc")
+
+    if payment.is_paid:
+        ElementTree.SubElement(platnosc, "Zaplacono").text = "1"
+
+    if payment.payment_date is not None:
+        ElementTree.SubElement(platnosc, "DataZaplaty").text = payment.payment_date.strftime(
+            "%Y-%m-%d"
+        )
+
+    if payment.due_date is not None or payment.due_description is not None:
+        termin_platnosci = ElementTree.SubElement(platnosc, "TerminPlatnosci")
+        if payment.due_date is not None:
+            ElementTree.SubElement(termin_platnosci, "Termin").text = payment.due_date.strftime(
+                "%Y-%m-%d"
+            )
+        if payment.due_description is not None:
+            ElementTree.SubElement(termin_platnosci, "TerminOpis").text = payment.due_description
+
+    if payment.method is not None:
+        ElementTree.SubElement(platnosc, "FormaPlatnosci").text = str(payment.method)
+
+    if payment.bank_account_number is not None:
+        rachunek = ElementTree.SubElement(platnosc, "RachunekBankowy")
+        ElementTree.SubElement(rachunek, "NrRB").text = payment.bank_account_number
+
+
 def _build_invoice_rows(parent: ElementTree.Element, invoice: Invoice) -> None:
     """Emit FaWiersz elements for each invoice row."""
     for index, row in enumerate(invoice.invoice_data.invoice_rows.rows, start=1):
@@ -304,6 +334,9 @@ def _build_invoice_data(root: ElementTree.Element, invoice: Invoice) -> None:
 
     _build_additional_descriptions(invoice_data, invoice)
     _build_invoice_rows(invoice_data, invoice)
+
+    if invoice.invoice_data.payment_info is not None:
+        _build_payment_info(invoice_data, invoice.invoice_data.payment_info)
 
 
 def convert_invoice_to_xml(invoice: Invoice, invoicing_software_name: str = "python-ksef") -> bytes:

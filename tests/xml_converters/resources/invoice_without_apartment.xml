@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Faktura
-    xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/"
+    xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:tns="http://crd.gov.pl/wzor/2025/06/25/13775/"
-    xsi:schemaLocation="http://crd.gov.pl/wzor/2025/06/25/13775/ http://crd.gov.pl/wzor/2025/06/25/13775/schemat.xsd"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/"
 >
     <Naglowek>
         <KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
@@ -16,7 +16,7 @@
             <NIP>1111111111</NIP>
             <Nazwa>Example Company 1 Sp z o. o.</Nazwa>
         </DaneIdentyfikacyjne>
-        <Adres xsi:type="tns:TAdres">
+        <Adres>
             <KodKraju>PL</KodKraju>
             <AdresL1>Kwiatowa 1</AdresL1>
             <AdresL2>00-001 Warszawa</AdresL2>

@@ -13,9 +13,6 @@ from ksef.models.invoice import (
 
 # FA(3) schema namespace
 FA3_NAMESPACE = "http://crd.gov.pl/wzor/2025/06/25/13775/"
-FA3_SCHEMA_LOCATION = (
-    "http://crd.gov.pl/wzor/2025/06/25/13775/ http://crd.gov.pl/wzor/2025/06/25/13775/schemat.xsd"
-)
 
 
 def _build_header(
@@ -50,7 +47,7 @@ def _build_issuer(root: ElementTree.Element, invoice: Invoice) -> None:
     issuer_full_name = ElementTree.SubElement(issuer_id_data, "Nazwa")
     issuer_full_name.text = invoice.issuer.identification_data.full_name
 
-    issuer_address = ElementTree.SubElement(issuer, "Adres", attrib={"xsi:type": "tns:TAdres"})
+    issuer_address = ElementTree.SubElement(issuer, "Adres")
     issuer_country_code = ElementTree.SubElement(issuer_address, "KodKraju")
     issuer_country_code.text = invoice.issuer.address.country_code
 
@@ -96,9 +93,7 @@ def _build_receiver(root: ElementTree.Element, invoice: Invoice) -> None:
 
     if invoice.recipient.address is not None:
         addr = invoice.recipient.address
-        receiver_address = ElementTree.SubElement(
-            receiver, "Adres", attrib={"xsi:type": "tns:TAdres"}
-        )
+        receiver_address = ElementTree.SubElement(receiver, "Adres")
         receiver_country_code = ElementTree.SubElement(receiver_address, "KodKraju")
         receiver_country_code.text = addr.country_code
 
@@ -144,7 +139,7 @@ def _build_additional_recipients(root: ElementTree.Element, invoice: Invoice) ->
         # Adres
         if recipient.address is not None:
             addr = recipient.address
-            addr_el = ElementTree.SubElement(podmiot3, "Adres", attrib={"xsi:type": "tns:TAdres"})
+            addr_el = ElementTree.SubElement(podmiot3, "Adres")
             ElementTree.SubElement(addr_el, "KodKraju").text = addr.country_code
             address_l1 = f"{addr.street} {addr.house_number}"
             if addr.apartment_number is not None:
@@ -319,10 +314,10 @@ def convert_invoice_to_xml(invoice: Invoice, invoicing_software_name: str = "pyt
     root = ElementTree.Element(
         "Faktura",
         attrib={
-            "xmlns": FA3_NAMESPACE,
+            "xmlns:etd": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/",
             "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "xmlns:tns": FA3_NAMESPACE,
-            "xsi:schemaLocation": FA3_SCHEMA_LOCATION,
+            "xmlns:xsd": "http://www.w3.org/2001/XMLSchema",
+            "xmlns": FA3_NAMESPACE,
         },
     )
 

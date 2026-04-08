@@ -6,6 +6,9 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 from ksef.models.invoice import (
+    PAYMENT_METHOD_BANK_TRANSFER,
+    PAYMENT_METHOD_CARD,
+    PAYMENT_METHOD_CASH,
     Address,
     EuVatIdentification,
     ForeignIdentification,
@@ -16,6 +19,7 @@ from ksef.models.invoice import (
     IssuerIdentificationData,
     NipIdentification,
     NoIdentification,
+    PaymentInfo,
     Subject,
     SubjectIdentificationData,
 )
@@ -272,3 +276,79 @@ def test_recipient_with_name() -> None:
     podmiot2 = soup.find("Podmiot2")
     assert podmiot2.find("DaneIdentyfikacyjne").find("NIP").text == "2222222222"
     assert podmiot2.find("Nazwa").text == "Firma Testowa Sp. z o.o."
+
+
+def _make_invoice_with_payment(payment_info: PaymentInfo) -> Invoice:
+    """Build a minimal invoice with the given payment info."""
+    invoice = _make_invoice(Subject(identification_data=NipIdentification(nip="2222222222")))
+    invoice.invoice_data.payment_info = payment_info
+    return invoice
+
+
+def test_payment_info_omitted() -> None:
+    """Platnosc element is not emitted when payment_info is None."""
+    invoice = _make_invoice(Subject(identification_data=NipIdentification(nip="2222222222")))
+    xml = convert_invoice_to_xml(invoice)
+    soup = BeautifulSoup(xml, "xml")
+    assert soup.find("Platnosc") is None
+
+
+def test_payment_info_bank_transfer_with_due_date() -> None:
+    """Bank transfer invoice emits FormaPlatnosci=6, Termin and RachunekBankowy."""
+    invoice = _make_invoice_with_payment(
+        PaymentInfo(
+            due_date=date(2024, 2, 5),
+            method=PAYMENT_METHOD_BANK_TRANSFER,
+            bank_account_number="12345678901234567890123456",
+        )
+    )
+    soup = BeautifulSoup(convert_invoice_to_xml(invoice), "xml")
+    platnosc = soup.find("Platnosc")
+    assert platnosc is not None
+    assert platnosc.find("Zaplacono") is None
+    assert platnosc.find("DataZaplaty") is None
+    assert platnosc.find("TerminPlatnosci").find("Termin").text == "2024-02-05"
+    assert platnosc.find("FormaPlatnosci").text == "6"
+    assert platnosc.find("RachunekBankowy").find("NrRB").text == "12345678901234567890123456"
+
+
+def test_payment_info_paid_in_full() -> None:
+    """Already-paid invoice emits Zaplacono=1 and DataZaplaty."""
+    invoice = _make_invoice_with_payment(
+        PaymentInfo(
+            is_paid=True,
+            payment_date=date(2024, 1, 22),
+            method=PAYMENT_METHOD_CASH,
+        )
+    )
+    soup = BeautifulSoup(convert_invoice_to_xml(invoice), "xml")
+    platnosc = soup.find("Platnosc")
+    assert platnosc.find("Zaplacono").text == "1"
+    assert platnosc.find("DataZaplaty").text == "2024-01-22"
+    assert platnosc.find("FormaPlatnosci").text == "1"
+    assert platnosc.find("RachunekBankowy") is None
+
+
+def test_payment_info_with_due_description() -> None:
+    """Due date with custom description emits both Termin and TerminOpis."""
+    invoice = _make_invoice_with_payment(
+        PaymentInfo(
+            due_date=date(2024, 3, 1),
+            due_description="14 dni od otrzymania faktury",
+            method=PAYMENT_METHOD_CARD,
+        )
+    )
+    soup = BeautifulSoup(convert_invoice_to_xml(invoice), "xml")
+    termin_platnosci = soup.find("Platnosc").find("TerminPlatnosci")
+    assert termin_platnosci.find("Termin").text == "2024-03-01"
+    assert termin_platnosci.find("TerminOpis").text == "14 dni od otrzymania faktury"
+    assert soup.find("FormaPlatnosci").text == "2"
+
+
+def test_payment_info_is_paid_false_omits_zaplacono() -> None:
+    """Zaplacono element is not emitted when is_paid is False (default)."""
+    invoice = _make_invoice_with_payment(PaymentInfo(method=PAYMENT_METHOD_BANK_TRANSFER))
+    soup = BeautifulSoup(convert_invoice_to_xml(invoice), "xml")
+    platnosc = soup.find("Platnosc")
+    assert platnosc is not None
+    assert platnosc.find("Zaplacono") is None

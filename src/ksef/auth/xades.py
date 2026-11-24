@@ -5,7 +5,7 @@ import hashlib
 import logging
 import time
 import uuid
-from typing import Mapping, Optional, Tuple
+from typing import Mapping, Optional, Tuple, Union
 from urllib.parse import urljoin
 
 import requests
@@ -185,7 +185,7 @@ class XadesAuthorization(Authorization):
             raise error
         return AuthChallenge.from_dict(response.json())
 
-    def _load_private_key(self) -> "rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey":
+    def _load_private_key(self) -> Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]:
         """Load the private key (RSA or EC) from PEM or DER bytes."""
         try:
             key = serialization.load_pem_private_key(

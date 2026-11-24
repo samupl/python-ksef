@@ -4,6 +4,8 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock
 
+import pytest
+import requests
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
@@ -319,6 +321,96 @@ def test_send_invoice_full_flow(mocked_responses: RequestsMock) -> None:
 
     # Verify all four endpoints were called (public key certs + open + send + close)
     assert len(mocked_responses.calls) == 4  # noqa: PLR2004
+
+
+def _mock_open_session(mocked_responses: RequestsMock) -> None:
+    cert_der, _ = _generate_test_certificate()
+    _mock_public_key_certs(mocked_responses, cert_der)
+    mocked_responses.add(
+        url=f"{BASE}{URL_SESSIONS_ONLINE}",
+        method="POST",
+        content_type="application/json",
+        json={"referenceNumber": "session-ref-123"},
+    )
+
+
+def _mock_send_invoice_ok(mocked_responses: RequestsMock) -> None:
+    mocked_responses.add(
+        url=f"{BASE}sessions/online/session-ref-123/invoices",
+        method="POST",
+        status=202,
+        content_type="application/json",
+        json={"referenceNumber": "invoice-ref-456"},
+    )
+
+
+def test_send_invoice_returns_response_when_close_connection_fails(
+    mocked_responses: RequestsMock,
+) -> None:
+    """A network error on close must not discard an already-accepted invoice."""
+    _mock_open_session(mocked_responses)
+    _mock_send_invoice_ok(mocked_responses)
+    mocked_responses.add(
+        url=f"{BASE}sessions/online/session-ref-123/close",
+        method="POST",
+        body=requests.exceptions.ConnectionError("Connection reset by peer"),
+    )
+
+    client = Client(authorization=_create_mock_authorization(), environment=Environment.TEST)
+    response = client.send_invoice(nip="1234567890", invoice=_create_test_invoice())
+
+    assert isinstance(response, SendInvoiceResponse)
+    assert response.reference_number == "invoice-ref-456"
+    assert response.session_reference_number == "session-ref-123"
+    assert mocked_responses.calls[-1].request.url == f"{BASE}sessions/online/session-ref-123/close"
+
+
+def test_send_invoice_returns_response_when_close_returns_http_error(
+    mocked_responses: RequestsMock,
+) -> None:
+    """An HTTP error response on close must not discard an already-accepted invoice."""
+    _mock_open_session(mocked_responses)
+    _mock_send_invoice_ok(mocked_responses)
+    mocked_responses.add(
+        url=f"{BASE}sessions/online/session-ref-123/close",
+        method="POST",
+        status=500,
+        content_type="application/json",
+        json={"exception": "internal error"},
+    )
+
+    client = Client(authorization=_create_mock_authorization(), environment=Environment.TEST)
+    response = client.send_invoice(nip="1234567890", invoice=_create_test_invoice())
+
+    assert response.reference_number == "invoice-ref-456"
+
+
+def test_send_invoice_raises_send_error_not_close_error(
+    mocked_responses: RequestsMock,
+) -> None:
+    """When sending fails, the send error is raised, not a subsequent close error."""
+    _mock_open_session(mocked_responses)
+    mocked_responses.add(
+        url=f"{BASE}sessions/online/session-ref-123/invoices",
+        method="POST",
+        status=400,
+        content_type="application/json",
+        json={"exception": "invalid invoice"},
+    )
+    mocked_responses.add(
+        url=f"{BASE}sessions/online/session-ref-123/close",
+        method="POST",
+        body=requests.exceptions.ConnectionError("Connection reset by peer"),
+    )
+
+    client = Client(authorization=_create_mock_authorization(), environment=Environment.TEST)
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        client.send_invoice(nip="1234567890", invoice=_create_test_invoice())
+
+    assert exc_info.value.response.status_code == 400  # noqa: PLR2004
+    # Close was still attempted.
+    assert mocked_responses.calls[-1].request.url == f"{BASE}sessions/online/session-ref-123/close"
 
 
 def test_send_invoice_sets_session_reference_number(mocked_responses: RequestsMock) -> None:

@@ -303,6 +303,14 @@ class Client:
         This convenience method opens a session, sends the invoice, and closes
         the session automatically.
 
+        A failure while closing the session (network error or HTTP error
+        response) is logged and does not propagate. Once the invoice has been
+        accepted by ``send_invoice_in_session()`` it exists in KSeF, so raising
+        would make callers treat a delivered invoice as failed and retry it,
+        producing a duplicate. KSeF closes abandoned sessions on its own.
+        Likewise, if sending fails, the original send error is raised rather
+        than being masked by a close failure.
+
         Parameters
         ----------
         nip : str
@@ -324,10 +332,19 @@ class Client:
                 session_context=session_context,
                 invoice=invoice,
             )
-            return send_response
         finally:
-            # Always close session
-            self.close_session(session_context)
+            # Always close session, but never let a close failure mask the
+            # outcome of the send (successful response or original exception).
+            try:
+                self.close_session(session_context)
+            except requests.RequestException:
+                logger.warning(
+                    "Failed to close KSeF session %s; the send outcome is unaffected",
+                    session_context.reference_number,
+                    exc_info=True,
+                )
+
+        return send_response
 
     def get_session_status(self, session_reference_number: str) -> SessionStatusResponse:
         """Get the status of a session.

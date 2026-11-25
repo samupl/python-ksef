@@ -4,7 +4,7 @@ import hashlib
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Optional, Union, cast
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Union, cast
 from urllib.parse import urlencode, urljoin
 
 import requests
@@ -44,6 +44,25 @@ AES_KEY_SIZE = 32  # 256 bits
 AES_BLOCK_SIZE = 128  # bits
 IV_SIZE = 16  # bytes
 
+# Default HTTP timeout (seconds) for Client requests. Deliberately generous so
+# slow KSeF responses aren't cut off; pass a lower ``timeout`` to Client to fail
+# faster.
+DEFAULT_CLIENT_TIMEOUT = 600
+
+TimeoutType = Union[None, float, Tuple[float, float]]
+
+
+class _TimeoutSession(requests.Session):
+    """requests.Session that applies a default timeout to every request."""
+
+    def __init__(self, timeout: TimeoutType):
+        super().__init__()
+        self.timeout = timeout
+
+    def request(self, *args: Any, **kwargs: Any) -> requests.Response:
+        kwargs.setdefault("timeout", self.timeout)
+        return super().request(*args, **kwargs)
+
 
 @dataclass
 class SessionContext:
@@ -61,11 +80,27 @@ class Client:
         self,
         authorization: Authorization,
         environment: Environment = Environment.PRODUCTION,
+        timeout: TimeoutType = DEFAULT_CLIENT_TIMEOUT,
     ):
+        """Create a client.
+
+        Parameters
+        ----------
+        authorization : Authorization
+            An authorized Authorization instance.
+        environment : Environment
+            The KSeF environment to talk to.
+        timeout : float, (connect, read) tuple or None
+            HTTP timeout in seconds applied to every request, passed to
+            ``requests`` as-is (it bounds connecting and each wait for data,
+            not the total request time). Defaults to
+            ``DEFAULT_CLIENT_TIMEOUT``; ``None`` waits forever.
+        """
         self.authorization = authorization
         self.environment = environment
         self.base_url = environment.value
-        self.session = requests.Session()
+        self.timeout = timeout
+        self.session = _TimeoutSession(timeout=timeout)
 
     def build_url(self, url: str, params: Optional[Mapping[str, Union[str, int]]] = None) -> str:
         """Construct a full URL."""
